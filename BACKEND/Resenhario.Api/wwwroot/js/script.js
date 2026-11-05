@@ -30,8 +30,10 @@ async function api(caminho, opcoes = {}) {
             const json = JSON.parse(texto);
             mensagem = json.mensagem || json.title || json.detail || json.message || texto;
         } catch { /* A resposta pode ser texto simples. */ }
-        if (resposta.status === 401 && usuario?.token) {
-            localStorage.removeItem(SESSION_KEY);
+        if (resposta.status === 401) {
+            // Token ausente ou expirado: limpa a sessão e explica o que fazer.
+            if (usuario?.token) localStorage.removeItem(SESSION_KEY);
+            mensagem = "Sua sessão expirou ou você não entrou na conta. Faça login para continuar.";
         }
         throw new Error(mensagem);
     }
@@ -211,6 +213,7 @@ function configurarBuscaLivros() {
 }
 
 async function salvarLivro(livro, botao, msg) {
+    if (!exigirLogin()) return;
     botao.disabled = true; botao.textContent = "Salvando...";
     try {
         await api("/Livro", { method: "POST", body: JSON.stringify({ googleBId: livro.id, titulo: livro.titulo, autor: livro.autor || "Autor não informado", sinopse: livro.sinopse || null, isbn: livro.isbn || null, capaUrl: livro.capaUrl || null }) });
@@ -252,6 +255,7 @@ function configurarBuscaFilmes() {
 }
 
 async function salvarFilme(filme, botao, msg) {
+    if (!exigirLogin()) return;
     botao.disabled = true; botao.textContent = "Salvando...";
     try {
         await api("/Filme", { method: "POST", body: JSON.stringify({ tmdbId: filme.tmdbId, titulo: filme.titulo, diretor: filme.diretor || null, anoLancamento: filme.anoLancamento, posterUrl: filme.posterUrl || null }) });
@@ -287,6 +291,7 @@ function configurarBuscaSeries() {
                 const card = criarCard({ titulo: serie.titulo, imagem: serie.imagemUrl, descricao: serie.dataEstreia ? `Estreia: ${serie.dataEstreia}` : serie.sinopse });
                 const botao = document.createElement("button"); botao.textContent = "Adicionar ao catálogo";
                 botao.addEventListener("click", async () => {
+                    if (!exigirLogin()) return;
                     botao.disabled = true; botao.textContent = "Salvando...";
                     try {
                         await api("/Serie", { method: "POST", body: JSON.stringify(serie) });
@@ -494,7 +499,9 @@ async function configurarAdaptacoes() {
         } catch (e) { msg.textContent = `Não foi possível carregar os dados: ${e.message}`; }
     };
     form.addEventListener("submit", async e => {
-        e.preventDefault(); msg.textContent = "Vinculando adaptação...";
+        e.preventDefault();
+        if (!exigirLogin()) return;
+        msg.textContent = "Vinculando adaptação...";
         try {
             await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro: Number(livroSelect.value), idFilme: Number(filmeSelect.value) }) });
             msg.textContent = "Adaptação vinculada com sucesso."; await render(); await carregarOpcoesAdaptacoes();

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
@@ -53,6 +54,7 @@ public class AdaptacaoController : ControllerBase
         return Ok(ranking);
     }
 
+    [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpPost]
     public async Task<IActionResult> CriarAdaptacao([FromBody] CriarAdaptacaoRequest dados)
     {
@@ -79,6 +81,7 @@ public class AdaptacaoController : ControllerBase
         return Ok(new { mensagem = "Adaptação vinculada com sucesso.", adaptacao.IdAdaptacoes });
     }
 
+    [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletarAdaptacao(int id)
     {

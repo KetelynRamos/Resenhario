@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Resenhario.Api.Data;
 using Resenhario.Api.Models;
@@ -30,6 +31,7 @@ public class LivroController : ControllerBase
     }
 
     
+[Authorize] // Só usuários logados podem alterar o catálogo.
 [HttpPost]
 public async Task<IActionResult> CriarLivro(Livro livro)
 {
@@ -73,6 +75,7 @@ public async Task<IActionResult> CriarLivro(Livro livro)
     );
 }
 
+    [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpPut("{id}")]
     public IActionResult AtualizarLivro(int id, Livro livro)
     {
@@ -95,6 +98,7 @@ public async Task<IActionResult> CriarLivro(Livro livro)
         return NoContent();
     }
 
+    [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpDelete("{id}")]
     public IActionResult DeletarLivro(int id)
     {

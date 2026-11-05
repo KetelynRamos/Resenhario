@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
@@ -23,6 +24,7 @@ public class SerieController : ControllerBase
         return serie is null ? NotFound() : Ok(serie);
     }
 
+    [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpPost]
     public async Task<ActionResult<Serie>> CriarSerie(Serie serie)
     {
