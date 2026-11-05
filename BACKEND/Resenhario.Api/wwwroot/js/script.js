@@ -505,13 +505,81 @@ async function carregarResenhasEm(lista, pagina, tamanho, acrescentar = false) {
     }
 }
 
+// Card de resenha do feed social.
 function cardResenha(review) {
     const card = el("article", "card-resenha");
-    card.append(el("h3", "", review.titulo || "Obra"), criarEstrelas(review.notaLivro));
-    if (review.tituloFilme && review.notaFidelidade != null)
-        card.append(el("p", "", `Fidelidade de “${review.tituloFilme}”: ${review.notaFidelidade}/5`));
-    card.append(el("p", "", review.comentario || ""), el("small", "", `${review.nomeUsuario} · ${dataRelativa(review.dataCriacao)}`));
+
+    // Topo: avatar, nome, livro e "há 2 horas"
+    const topo = el("header", "resenha-topo");
+    const quem = el("div", "resenha-quem");
+    const linha = el("span", "resenha-acao", "resenhou ");
+    linha.append(el("b", "", review.titulo || "um livro"), ` · ${dataRelativa(review.dataCriacao)}`);
+    quem.append(el("strong", "", review.nomeUsuario), linha);
+    topo.append(criarAvatar(review.nomeUsuario), quem);
+
+    // Capa do livro (e pôster do filme, se a resenha avaliou uma adaptação)
+    const capas = el("div", "resenha-capas");
+    const capaLivro = el("div", "resenha-capa");
+    capaLivro.appendChild(criarCapa(review.capaUrl, review.titulo, "Livro"));
+    capas.appendChild(capaLivro);
+    if (review.tituloFilme) {
+        const poster = el("div", "resenha-capa resenha-poster");
+        poster.appendChild(criarCapa(review.posterUrl, review.tituloFilme, "Filme"));
+        capas.appendChild(poster);
+    }
+
+    // Notas: estrelas para o livro e "chip" de fidelidade para o filme
+    const notas = el("div", "resenha-notas");
+    const chipLivro = el("span", "chip chip-livro", "📖 Livro ");
+    chipLivro.appendChild(criarEstrelas(review.notaLivro));
+    notas.appendChild(chipLivro);
+    if (review.tituloFilme && review.notaFidelidade != null) {
+        // Mostra o ano só se ele ainda não estiver no título (ex.: "Duna (1984)").
+        const ano = review.anoFilme && !review.tituloFilme.includes(String(review.anoFilme)) ? ` (${review.anoFilme})` : "";
+        const chipFilme = el("span", "chip chip-filme", `🎬 Fidelidade de ${review.tituloFilme}${ano}: `);
+        chipFilme.appendChild(el("b", "", `${review.notaFidelidade}/5`));
+        notas.appendChild(chipFilme);
+    }
+
+    // Texto: resenhas longas mostram só o começo, com botão "ler mais"
+    const texto = el("p", "resenha-texto", review.comentario || "");
+    const conteudo = el("div", "resenha-conteudo");
+    conteudo.append(notas, texto);
+    if ((review.comentario || "").length > 220) {
+        texto.classList.add("recolhido");
+        const lerMais = el("button", "ler-mais", "ler mais");
+        lerMais.type = "button";
+        lerMais.addEventListener("click", () => {
+            const recolhido = texto.classList.toggle("recolhido");
+            lerMais.textContent = recolhido ? "ler mais" : "ler menos";
+        });
+        conteudo.appendChild(lerMais);
+    }
+    conteudo.appendChild(criarComparativo(review));
+
+    const corpo = el("div", "resenha-corpo");
+    corpo.append(capas, conteudo);
+    card.append(topo, corpo);
     return card;
+}
+
+// Comparativo entre leitores: a nota desta pessoa × a média da comunidade para o mesmo livro.
+function criarComparativo(review) {
+    const caixa = el("p", "resenha-comparativo");
+    const primeiroNome = review.nomeUsuario.split(" ")[0];
+    if (review.totalResenhasLivro <= 1 || review.mediaNotaLivro == null) {
+        caixa.textContent = "✨ Primeira resenha deste livro na comunidade";
+        return caixa;
+    }
+    const diferenca = review.notaLivro - review.mediaNotaLivro;
+    let tendencia = "na média da comunidade", classe = "igual";
+    if (diferenca >= 0.3) { tendencia = "gostou mais que a média"; classe = "acima"; }
+    if (diferenca <= -0.3) { tendencia = "gostou menos que a média"; classe = "abaixo"; }
+    caixa.classList.add(`comparativo-${classe}`);
+    caixa.append(`${primeiroNome} deu `, el("b", "", String(review.notaLivro)),
+        " · média da comunidade ", el("b", "", formatarMedia(review.mediaNotaLivro)),
+        ` (${review.totalResenhasLivro} resenhas) → ${tendencia}`);
+    return caixa;
 }
 
 async function iniciarFeed() {

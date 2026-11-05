@@ -380,8 +380,7 @@ select { cursor: pointer; }
 /* Linhas simples de texto (listas provisórias) */
 .lista { display: grid; gap: 12px; }
 .linha-adaptacao { padding: 14px 16px; border: 1px solid var(--borda); border-radius: var(--raio-pequeno); background: var(--painel); }
-.card-resenha { display: grid; gap: 8px; padding: 18px; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--painel); }
-.card-resenha small { color: var(--texto-apagado); }
+
 
 /* 8. Rodapé ---------------------------------------------------------- */
 footer {
@@ -647,6 +646,62 @@ footer strong { color: var(--texto-suave); font-family: var(--fonte-titulo); }
 .convite h2 { margin: 8px 0 10px; max-width: 620px; }
 .convite .botao { flex-shrink: 0; }
 
+/* 12. Feed social: cards de resenha --------------------------------------- */
+.card-resenha {
+    display: grid;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    background: linear-gradient(180deg, var(--painel), var(--fundo-elevado));
+    transition: border-color var(--transicao), transform var(--transicao);
+    animation: entrar .4s ease both;
+}
+.card-resenha:hover { border-color: var(--borda-forte); transform: translateY(-2px); }
+.resenha-topo { display: flex; align-items: center; gap: 12px; }
+.resenha-quem { display: grid; line-height: 1.35; min-width: 0; }
+.resenha-quem strong { font-size: .95rem; }
+.resenha-acao { color: var(--texto-apagado); font-size: .84rem; }
+.resenha-acao b { color: var(--texto-suave); font-weight: 600; }
+.resenha-corpo { display: grid; grid-template-columns: auto 1fr; gap: 18px 40px; align-items: start; }
+/* Capa do livro com o pôster do filme encaixado por cima, levemente girado */
+.resenha-capas { position: relative; width: 88px; }
+.resenha-capa { aspect-ratio: 2 / 3; overflow: hidden; border-radius: 6px; box-shadow: var(--sombra); }
+.resenha-capa .capa-placeholder { padding: 6px; }
+.resenha-capa .capa-placeholder strong { font-size: .62rem; }
+.resenha-capa .capa-placeholder-tipo { display: none; }
+.resenha-poster { position: absolute; width: 62%; right: -22px; bottom: -14px; border: 2px solid var(--fundo); transform: rotate(6deg); }
+.resenha-conteudo { display: grid; gap: 10px; min-width: 0; padding-right: 4px; }
+.resenha-notas { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+    display: inline-block;
+    padding: 4px 11px;
+    border-radius: 999px;
+    font-size: .8rem;
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--borda);
+    color: var(--texto-suave);
+}
+.chip .estrelas { font-size: .9rem; margin-left: 4px; }
+.chip-filme { border-color: rgba(163, 32, 47, .55); background: rgba(163, 32, 47, .12); }
+.chip-filme b { color: #ff8f9a; }
+.resenha-texto { color: var(--texto); font-size: .97rem; line-height: 1.65; }
+.resenha-texto.recolhido { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ler-mais { justify-self: start; padding: 0; background: none; color: var(--ambar); font-size: .85rem; }
+.ler-mais:hover { background: none; box-shadow: none; text-decoration: underline; }
+.resenha-comparativo {
+    padding: 9px 12px;
+    border-radius: var(--raio-pequeno);
+    background: rgba(255, 255, 255, .03);
+    border-left: 3px solid var(--texto-apagado);
+    color: var(--texto-suave);
+    font-size: .84rem;
+}
+.resenha-comparativo b { color: var(--texto); }
+.comparativo-acima { border-left-color: var(--sucesso); }
+.comparativo-abaixo { border-left-color: var(--erro); }
+.comparativo-igual { border-left-color: var(--ambar); }
+
 /* Responsivo: celular ------------------------------------------------- */
 @media (max-width: 860px) {
     .hero-grade { grid-template-columns: 1fr; }
@@ -680,6 +735,9 @@ footer strong { color: var(--texto-suave); font-family: var(--fonte-titulo); }
     .ranking-linha { grid-template-columns: 1fr; gap: 6px; }
     .ranking-posicao { text-align: left; font-size: 1.3rem; }
     .grade-duelos { grid-template-columns: 1fr; }
+    .resenha-capas { width: 64px; }
+    .resenha-corpo { gap: 22px 30px; }
+    .chip { border-radius: 12px; }
     /* Pódio no celular: 1º lugar em cima, 2º e 3º lado a lado */
     .podio { grid-template-columns: 1fr 1fr; grid-template-areas: "primeiro primeiro" "segundo terceiro"; row-gap: 28px; }
     .lugar-1 { grid-area: primeiro; }
