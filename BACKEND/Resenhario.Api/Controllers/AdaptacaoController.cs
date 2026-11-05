@@ -14,8 +14,11 @@ public class AdaptacaoController : ControllerBase
     private readonly AppDbContext _context;
     public AdaptacaoController(AppDbContext context) => _context = context;
 
+    // Dados completos de uma adaptação para o card "Livro vs. Filme".
     public record AdaptacaoResposta(int IdAdaptacoes, int IdLivro, string TituloLivro,
-        int IdFilme, string TituloFilme, string? PosterUrl, DateTime DataVinculo);
+        int IdFilme, string TituloFilme, string? PosterUrl, DateTime DataVinculo,
+        string AutorLivro, string? CapaUrl, string? Diretor, int? AnoLancamento,
+        double? MediaFidelidade, int TotalAvaliacoes, double? MediaNotaLivro, int TotalResenhasLivro);
     public record CriarAdaptacaoRequest(
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um livro válido.")] int IdLivro,
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme);
@@ -29,7 +32,14 @@ public class AdaptacaoController : ControllerBase
             join f in _context.Filmes on a.IdFilme equals f.IdFilme
             orderby l.Titulo, f.Titulo
             select new AdaptacaoResposta(a.IdAdaptacoes, a.IdLivro, l.Titulo,
-                a.IdFilme, f.Titulo, f.PosterUrl, a.DataVinculo)
+                a.IdFilme, f.Titulo, f.PosterUrl, a.DataVinculo,
+                l.Autor, l.CapaUrl, f.Diretor, f.AnoLancamento,
+                _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
+                    .Select(r => (double?)r.NotaFidelidade).Average(),
+                _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null),
+                _context.Reviews.Where(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
+                    .Select(r => (double?)r.NotaLivro).Average(),
+                _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null))
         ).ToListAsync();
         return Ok(adaptacoes);
     }

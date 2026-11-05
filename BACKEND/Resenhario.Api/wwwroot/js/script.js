@@ -223,13 +223,13 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
     });
 }
 
-// Lista de adaptações já vinculadas (substituída pelo card Livro vs. Filme).
+// Adaptações já vinculadas, cada uma no card "Livro vs. Filme".
 function renderizarAdaptacoes(lista, adaptacoes) {
     if (!adaptacoes.length) {
         mostrarEstadoVazio(lista, { icone: "🔗", titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
         return;
     }
-    lista.replaceChildren(...adaptacoes.map(a => el("p", "linha-adaptacao", `${a.tituloLivro} → ${a.tituloFilme}`)));
+    lista.replaceChildren(...adaptacoes.map(a => criarDuelo(a)));
 }
 
 function preencherSelect(select, itens, idCampo, textoCampo, placeholder) {
@@ -482,21 +482,54 @@ async function iniciarFeed() {
 }
 
 // ---------------------------------------------------------------------
-// Ranking de adaptações
+// Ranking de adaptações: pódio (top 3) + do 4º ao 10º lugar
 // ---------------------------------------------------------------------
 async function iniciarRanking() {
+    const podio = document.getElementById("ranking-podio");
     const lista = document.getElementById("ranking-lista");
-    if (!lista) return;
-    mostrarSkeleton(lista, 4, "resenha");
+    if (!podio || !lista) return;
+    mostrarSkeleton(podio, 3, "obra");
+    mostrarSkeleton(lista, 3, "duelo");
     try {
-        const ranking = await api("/Adaptacao/ranking");
+        const ranking = (await api("/Adaptacao/ranking")).slice(0, 10);
         if (!ranking.length) {
-            mostrarEstadoVazio(lista, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Ele aparece quando houver notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            lista.replaceChildren();
+            mostrarEstadoVazio(podio, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Ele aparece quando houver notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
             return;
         }
-        lista.replaceChildren(...ranking.map((item, i) => el("p", "linha-adaptacao",
-            `${i + 1}. ${item.tituloLivro} → ${item.tituloFilme}: fidelidade ${formatarMedia(item.mediaFidelidade)} · livro ${formatarMedia(item.mediaNotaLivro)}`)));
+        // No pódio o 1º lugar fica no meio: ordem visual 2º, 1º, 3º.
+        const ordemVisual = [1, 0, 2].filter(i => i < ranking.length);
+        podio.replaceChildren(...ordemVisual.map(i => criarLugarPodio(ranking[i], i + 1)));
+
+        const demais = ranking.slice(3);
+        document.getElementById("titulo-demais").hidden = !demais.length;
+        lista.replaceChildren(...demais.map((item, i) => {
+            const linha = el("div", "ranking-linha");
+            linha.append(el("span", "ranking-posicao", `${i + 4}º`), criarDuelo(item));
+            return linha;
+        }));
     } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar o ranking", texto: e.message });
+        lista.replaceChildren();
+        mostrarEstadoVazio(podio, { erro: true, titulo: "Não foi possível carregar o ranking", texto: e.message });
     }
+}
+
+// Um degrau do pódio: pôster grande do filme com a capa do livro encaixada.
+function criarLugarPodio(item, posicao) {
+    const lugar = el("article", `podio-lugar lugar-${posicao}`);
+    const imagens = el("div", "podio-imagens");
+    const capaMini = el("div", "podio-capa-mini");
+    capaMini.appendChild(criarCapa(item.capaUrl, item.tituloLivro, "Livro"));
+    imagens.append(criarCapa(item.posterUrl, item.tituloFilme, "Filme"), capaMini, el("span", "podio-medalha", `${posicao}º`));
+
+    const nota = el("div", "podio-nota");
+    nota.append(el("strong", "", formatarMedia(item.mediaFidelidade)), criarEstrelas(item.mediaFidelidade),
+        el("small", "", `fidelidade · ${item.totalAvaliacoes} ${item.totalAvaliacoes === 1 ? "avaliação" : "avaliações"}`));
+
+    lugar.append(imagens,
+        el("h3", "", item.tituloFilme),
+        el("p", "podio-sub", `do livro de ${item.autorLivro}`),
+        nota,
+        el("div", "podio-degrau"));
+    return lugar;
 }

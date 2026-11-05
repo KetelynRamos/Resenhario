@@ -162,4 +162,53 @@ function criarAvatar(nome) {
     return avatar;
 }
 
+// ----- Card "Livro vs. Filme": o diferencial do Resenhário ----------
+// Recebe uma adaptação (da rota /api/Adaptacao ou /api/Adaptacao/ranking) e mostra
+// capa × pôster lado a lado com a nota média do livro e a fidelidade média do filme.
+
+// Frase curta que resume a fidelidade para quem está assistindo à apresentação.
+function vereditoFidelidade(media) {
+    if (media == null) return "Ainda sem notas de fidelidade";
+    if (media >= 4.5) return "Adaptação muito fiel";
+    if (media >= 3.5) return "Fiel no essencial";
+    if (media >= 2.5) return "Toma várias liberdades";
+    return "Quase outra história";
+}
+
+// Bloco de uma nota: rótulo, número grande, barra proporcional (0 a 5) e contagem.
+function criarBlocoNota(rotulo, media, total, singular, plural, classe) {
+    const bloco = el("div", `nota-bloco ${classe}`);
+    const barra = el("span", "nota-barra");
+    barra.style.setProperty("--valor", `${((media || 0) / 5) * 100}%`);
+    bloco.append(el("span", "nota-rotulo", rotulo), el("strong", "nota-valor", formatarMedia(media)), barra,
+        el("small", "", `${total} ${total === 1 ? singular : plural}`));
+    return bloco;
+}
+
+function criarDuelo(item, destaque = false) {
+    const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}`);
+
+    const imagens = el("div", "duelo-imagens");
+    const livro = el("figure", "duelo-capa duelo-livro");
+    livro.append(criarCapa(item.capaUrl, item.tituloLivro, "Livro"), el("figcaption", "", "Livro"));
+    const filme = el("figure", "duelo-capa duelo-filme");
+    filme.append(criarCapa(item.posterUrl, item.tituloFilme, "Filme"), el("figcaption", "", "Filme"));
+    imagens.append(livro, el("span", "duelo-vs", "vs"), filme);
+
+    const info = el("div", "duelo-info");
+    const filmeTexto = [item.tituloFilme, item.anoLancamento && `(${item.anoLancamento})`].filter(Boolean).join(" ");
+    info.append(
+        el("p", "duelo-veredito", vereditoFidelidade(item.mediaFidelidade)),
+        el("h3", "", item.tituloLivro),
+        el("p", "duelo-sub", `${item.autorLivro || ""} → ${filmeTexto}${item.diretor ? `, de ${item.diretor}` : ""}`));
+    const notas = el("div", "duelo-notas");
+    notas.append(
+        criarBlocoNota("📖 Nota do livro", item.mediaNotaLivro, item.totalResenhasLivro, "resenha", "resenhas", "nota-livro"),
+        criarBlocoNota("🎬 Fidelidade do filme", item.mediaFidelidade, item.totalAvaliacoes, "avaliação", "avaliações", "nota-filme"));
+    info.appendChild(notas);
+
+    card.append(imagens, info);
+    return card;
+}
+
 document.addEventListener("DOMContentLoaded", configurarCabecalho);
