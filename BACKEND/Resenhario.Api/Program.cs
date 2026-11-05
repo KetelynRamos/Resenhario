@@ -69,6 +69,25 @@ builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document,
 }));
 var app = builder.Build();
 
+// Dados de demonstração (seed idempotente). Para desligar: "Seed:Habilitado": false.
+// Se o banco estiver fora do ar, a API sobe mesmo assim e só registra o aviso no log.
+if (app.Configuration.GetValue("Seed:Habilitado", true))
+{
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await SeedData.PopularAsync(db);
+        await SeedImagens.PreencherAsync(db, scope.ServiceProvider.GetRequiredService<IHttpClientFactory>(),
+            app.Configuration, logger);
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Seed: não foi possível popular o banco com os dados de demonstração.");
+    }
+}
+
 // Tratamento global de erros: qualquer exceção não tratada vira uma resposta
 // 500 em JSON com mensagem amigável, sem expor o stack trace ao navegador.
 // (O detalhe do erro continua aparecendo no log do terminal.)
