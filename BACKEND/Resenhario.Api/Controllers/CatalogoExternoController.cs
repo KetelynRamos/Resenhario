@@ -124,7 +124,8 @@ public class CatalogoExternoController : ControllerBase
             if (!json.RootElement.TryGetProperty("results", out var results) || results.ValueKind != JsonValueKind.Array)
                 return Ok(Array.Empty<FilmeExterno>());
 
-            var saida = new List<FilmeExterno>();
+            // 1º) Lê os filmes do resultado da busca (ainda sem o diretor).
+            var filmes = new List<FilmeExterno>();
             foreach (var item in results.EnumerateArray().Take(12))
             {
                 var id = item.TryGetProperty("id", out var idEl) ? idEl.GetInt32() : 0;
@@ -135,9 +136,17 @@ public class CatalogoExternoController : ControllerBase
                     ano = anoLido;
                 var posterPath = Texto(item, "poster_path");
                 var poster = string.IsNullOrWhiteSpace(posterPath) ? null : "https://image.tmdb.org/t/p/w500" + posterPath;
-                var diretor = await BuscarDiretor(client, token, id, cancellationToken);
-                saida.Add(new FilmeExterno(id.ToString(), titulo, diretor, ano, poster));
+                filmes.Add(new FilmeExterno(id.ToString(), titulo, null, ano, poster));
             }
+
+            // 2º) O diretor vem de outra rota do TMDB (/credits), uma chamada por filme.
+            // Task.WhenAll dispara as 12 chamadas AO MESMO TEMPO e espera todas terminarem:
+            // a busca demora o tempo da chamada mais lenta, e não a soma das 12.
+            var diretores = await Task.WhenAll(filmes.Select(f =>
+                BuscarDiretor(client, token, int.Parse(f.TmdbId), cancellationToken)));
+
+            // "with" cria uma cópia do record trocando só o campo Diretor.
+            var saida = filmes.Select((f, i) => f with { Diretor = diretores[i] }).ToList();
             return Ok(saida);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
