@@ -262,7 +262,6 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | GET | `/api/Review/{id}` | Uma resenha | **200**, 404 |
 | POST 🔒 | `/api/Review` | Publica resenha com avaliação dupla | **201**, 400 |
 | DELETE 🔒 | `/api/Review/{id}` | Remove a própria resenha | **204**, 404 |
-| GET | `/api/Review/ranking-adaptacoes` | Mesmo cálculo de `/api/Adaptacao/ranking` (rota antiga, mantida por compatibilidade) | **200** |
 
 ### Utilitários e extras
 

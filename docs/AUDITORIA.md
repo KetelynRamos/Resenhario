@@ -218,7 +218,7 @@
 | P2-2: POST com 201 Created | ✅ | `73563f3` |
 | P2-3: DTOs com `ReadFromJsonAsync` nas APIs externas | ✅ | `647c013` |
 | P2-4: POO, regras de status no Model `Estante` | ✅ | `56f7091` |
-| P2-5: remover a rota duplicada `/api/Review/ranking-adaptacoes` | ⏸️ **Aguarda autorização da equipe** (mantida e usando a mesma regra do ranking) | — |
+| P2-5: remover a rota duplicada `/api/Review/ranking-adaptacoes` | ✅ Removida com autorização da equipe (o ranking fica só em `/api/Adaptacao/ranking`) | ver histórico |
 | P2-6: `Resenhario.Api.http` com todas as rotas | ✅ | `260fc57` |
 | P2-7: índices únicos (script 09) | ✅ (rodar no banco) | `9549da6` |
 | P2-8: documentação (`DOCUMENTACAO_TECNICA.md`, `GUIA_DEFESA.md`) | ✅ | `61476b4`, guia |

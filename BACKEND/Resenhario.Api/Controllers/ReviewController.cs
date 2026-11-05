@@ -77,28 +77,6 @@ public class ReviewController : ControllerBase
         return (resultado, total);
     }
 
-    [HttpGet("ranking-adaptacoes")]
-    public async Task<IActionResult> RankingAdaptacoes()
-    {
-        var ranking = await _context.Adaptacoes.Select(a => new
-        {
-            a.IdAdaptacoes,
-            IdLivro = a.IdLivro,
-            IdFilme = a.IdFilme,
-            TituloLivro = _context.Livros.Where(l => l.IdLivros == a.IdLivro).Select(l => l.Titulo).FirstOrDefault(),
-            TituloFilme = _context.Filmes.Where(f => f.IdFilme == a.IdFilme).Select(f => f.Titulo).FirstOrDefault(),
-            MediaFidelidade = _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-                .Select(r => (double?)r.NotaFidelidade).Average(),
-            TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-        })
-        .Where(x => x.TotalAvaliacoes >= AdaptacaoController.MinimoAvaliacoesRanking)
-        .OrderByDescending(x => x.MediaFidelidade)
-        .ThenByDescending(x => x.TotalAvaliacoes)
-        .Take(20)
-        .ToListAsync();
-        return Ok(ranking);
-    }
-
     // POST /api/Review → publica a resenha com AVALIAÇÃO DUPLA:
     //   NotaLivro (obrigatória, 1 a 5) = qualidade da obra;
     //   NotaFidelidade (opcional, 1 a 5) = o quanto o filme foi fiel, só se a pessoa escolheu uma adaptação.
