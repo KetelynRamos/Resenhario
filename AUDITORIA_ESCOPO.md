@@ -1,3 +1,5 @@
+> **Documento histórico (antes de 05/11/2026).** Vários pontos abaixo já foram resolvidos. A auditoria atual está em [`docs/AUDITORIA.md`](docs/AUDITORIA.md) e as instruções de execução no [`LEIA-ME.md`](LEIA-ME.md).
+
 # Auditoria de alinhamento — Resenhário
 
 ## Requisitos implementados nesta revisão
