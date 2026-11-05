@@ -31,12 +31,15 @@ public class EstanteController : ControllerBase
             join s0 in _context.Series on e.IdSerie equals (int?)s0.IdSerie into series
             from s in series.DefaultIfEmpty()
             where e.IdUsuario == usuarioId
+            // A ordenação vem antes do select: o EF Core não consegue traduzir para SQL
+            // um OrderBy feito sobre o record EstanteItem já montado (causava erro 500).
+            orderby e.DataAtualizacao descending
             select new EstanteItem(e.IdEstante, e.IdUsuario, e.IdLivros, e.IdFilme, e.IdSerie,
                 e.Status, l != null ? l.Titulo : f != null ? f.Titulo : s != null ? s.Titulo : "Item",
                 l != null ? l.Autor : f != null ? f.Diretor : null,
                 l != null ? "Livro" : f != null ? "Filme" : "Série", e.DataAtualizacao);
 
-        return Ok(await query.OrderByDescending(e => e.DataAtualizacao).ToListAsync());
+        return Ok(await query.ToListAsync());
     }
 
     [HttpPost]
