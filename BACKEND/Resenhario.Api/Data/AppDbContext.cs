@@ -3,6 +3,8 @@ using Resenhario.Api.Models;
 
 namespace Resenhario.Api.Data
 {
+    // Ponte entre as classes C# e o banco MySQL (Entity Framework Core).
+    // Cada DbSet<T> representa uma tabela: _context.Livros.ToListAsync() vira um SELECT na tabela Livros.
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options)

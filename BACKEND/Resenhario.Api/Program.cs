@@ -5,21 +5,32 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Resenhario.Api.Data;
 
+// Program.cs: ponto de entrada. Primeiro registramos os SERVIÇOS (builder.Services),
+// depois montamos o PIPELINE de cada requisição (app.Use...) e as rotas (app.Map...).
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+// ----- Serviços (injeção de dependência) -----
+
+builder.Services.AddControllers(); // ativa os controllers da pasta Controllers/
+
+// HttpClient nomeado para as APIs externas, criado pelo IHttpClientFactory.
+// Timeout de 20 s: se o Google Books ou o TMDB travarem, a requisição não fica presa para sempre.
 builder.Services.AddHttpClient("CatalogoExterno", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Resenhario/1.0 (academic project)");
 });
 
+// Banco MySQL com EF Core (Pomelo). A string de conexão vem de appsettings/user-secrets,
+// nunca escrita aqui no código.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("A conexão com o banco não foi configurada.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
+// Autenticação JWT: no login a API assina um token com esta chave; nas rotas com [Authorize]
+// ela confere a assinatura, o emissor, o público e a validade do token recebido.
 var jwtKey = builder.Configuration["Jwt:Key"];
 if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
     throw new InvalidOperationException("Configure Jwt:Key com pelo menos 32 bytes. Use Jwt__Key como variável de ambiente fora do ambiente de desenvolvimento.");
@@ -43,6 +54,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+// CORS: só é necessário se o front for aberto em outra porta (ex.: Live Server).
+// Servido pelo wwwroot, o front está na mesma origem da API e não depende disso.
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
     policy.WithOrigins(
             "http://localhost:5500", "http://127.0.0.1:5500",
@@ -67,6 +80,7 @@ builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document,
     document.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] }];
     return Task.CompletedTask;
 }));
+
 var app = builder.Build();
 
 // Dados de demonstração (seed idempotente). Para desligar: "Seed:Habilitado": false.
@@ -114,9 +128,10 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseCors("Frontend");
+// Ordem importa: primeiro descobre QUEM é o usuário (token), depois verifica se ele PODE acessar.
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
+app.MapControllers(); // liga as rotas dos controllers (api/[controller])
 
 // Rota de saúde (Minimal API): confirma se a API está no ar e se o banco responde.
 // Útil antes da apresentação: abra http://localhost:5131/api/saude

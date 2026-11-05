@@ -39,6 +39,7 @@ public class AuthController : ControllerBase
         [Required(ErrorMessage = "Informe sua senha.")] string Senha);
     public record UsuarioResposta(int IdUsuario, string Nome, string Email, string Token);
 
+    // POST /api/Auth/cadastro → cria a conta e já devolve o token (201)
     [HttpPost("cadastro")]
     public async Task<IActionResult> Cadastro([FromBody] CadastroRequest? dados)
     {
@@ -60,6 +61,8 @@ public class AuthController : ControllerBase
         {
             Nome = nome,
             Email = email,
+            // BCrypt gera um hash com "sal" aleatório: a mesma senha vira hashes diferentes,
+            // e não dá para voltar do hash para a senha. Só guardamos o hash.
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(dados.Senha),
             DataCadastro = DateTime.UtcNow
         };
@@ -70,6 +73,8 @@ public class AuthController : ControllerBase
         return Created("/api/Usuario/me", CriarResposta(usuario));
     }
 
+    // POST /api/Auth/login → 200 com o token, ou 401 com mensagem genérica
+    // (não dizemos se foi o e-mail ou a senha que errou, para não ajudar quem tenta adivinhar contas).
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest? dados)
     {
@@ -82,6 +87,7 @@ public class AuthController : ControllerBase
             return Unauthorized("E-mail ou senha incorretos.");
 
         var senhaValida = false;
+        // Verify aplica o BCrypt à senha digitada e compara com o hash salvo.
         try { senhaValida = BCrypt.Net.BCrypt.Verify(dados.Senha, usuario.SenhaHash); }
         catch (Exception) { /* Hash antigo, fictício ou inválido: tentar o verificador legado abaixo. */ }
 
@@ -109,6 +115,7 @@ public class AuthController : ControllerBase
         return Ok(CriarResposta(usuario));
     }
 
+    // Monta o token JWT: dados do usuário (claims) + validade de 8 horas, assinados com a Jwt:Key.
     private UsuarioResposta CriarResposta(Usuario usuario)
     {
         var chave = _configuration["Jwt:Key"];

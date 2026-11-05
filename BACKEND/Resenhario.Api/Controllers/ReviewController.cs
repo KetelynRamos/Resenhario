@@ -34,6 +34,7 @@ public class ReviewController : ControllerBase
         return review is null ? NotFound() : Ok(review);
     }
 
+    // GET /api/Review/feed?pagina=1&tamanho=10 → feed paginado (Skip/Take), mais recentes primeiro
     [HttpGet("feed")]
     public async Task<IActionResult> Feed([FromQuery] int pagina = 1, [FromQuery] int tamanho = 10)
     {
@@ -98,6 +99,9 @@ public class ReviewController : ControllerBase
         return Ok(ranking);
     }
 
+    // POST /api/Review → publica a resenha com AVALIAÇÃO DUPLA:
+    //   NotaLivro (obrigatória, 1 a 5) = qualidade da obra;
+    //   NotaFidelidade (opcional, 1 a 5) = o quanto o filme foi fiel, só se a pessoa escolheu uma adaptação.
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CriarReview([FromBody] Review review)
@@ -111,6 +115,7 @@ public class ReviewController : ControllerBase
         if (string.IsNullOrWhiteSpace(review.Comentario) || review.Comentario.Trim().Length > 5000)
             return BadRequest("Escreva uma resenha de até 5.000 caracteres.");
 
+        // Regra de negócio: a adaptação escolhida tem que ser DESTE livro.
         if (review.IdAdaptacao.HasValue)
         {
             var adaptacao = await _context.Adaptacoes.FirstOrDefaultAsync(a =>
@@ -126,7 +131,7 @@ public class ReviewController : ControllerBase
             review.AssistiuFilme = false;
         }
 
-        review.IdUsuario = usuarioId;
+        review.IdUsuario = usuarioId; // o autor vem do token, nunca do corpo da requisição
         review.Comentario = review.Comentario.Trim();
         review.Voto = null;
         review.DataCriacao = DateTime.UtcNow;

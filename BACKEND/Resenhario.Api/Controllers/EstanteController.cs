@@ -7,6 +7,7 @@ using Resenhario.Api.Models;
 
 namespace Resenhario.Api.Controllers;
 
+// Estante virtual: todas as rotas exigem login ([Authorize] na classe inteira).
 [ApiController]
 [Authorize]
 [Route("api/[controller]")]
@@ -110,6 +111,8 @@ public class EstanteController : ControllerBase
         return NoContent();
     }
 
+    // Lê o ID do usuário de dentro do token JWT (claim NameIdentifier).
+    // Por isso cada pessoa só enxerga e altera a PRÓPRIA estante, mesmo que mande outro ID.
     private bool TentarObterUsuarioId(out int usuarioId) =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out usuarioId);
 
