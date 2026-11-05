@@ -344,7 +344,7 @@ async function configurarEstante() {
     try {
         const itens = await api("/Estante"); area.replaceChildren();
         renderizarEstatisticasLeitura(itens);
-        if (!itens.length) { msg.textContent = "Sua estante está vazia. Pesquise livros, filmes ou séries e adicione o que quiser guardar."; return; }
+        if (!itens.length) { msg.textContent = "Sua estante está vazia. Pesquise livros ou filmes e adicione o que quiser guardar."; return; }
         msg.textContent = "";
         itens.forEach(item => {
             const card = criarCard({ titulo: item.titulo, autor: item.autor, descricao: item.tipo });
