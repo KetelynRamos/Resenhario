@@ -60,9 +60,7 @@ dotnet restore
 dotnet run --launch-profile http
 ```
 
-A API deverá ficar disponível em `http://localhost:5131`. Mantenha o terminal aberto enquanto utiliza o frontend.
-
-Abra a pasta `frontend` com o Live Server do VS Code. As origens `localhost` e `127.0.0.1` nas portas 5500, 5501 e 5502 estão liberadas pelo CORS de desenvolvimento. Se o Live Server usar outra porta, ajuste a política CORS em `Program.cs`.
+Depois abra `http://localhost:5131` no navegador. O frontend (HTML, CSS e JS) fica em `BACKEND/Resenhario.Api/wwwroot/` e é servido pela própria API, então não é preciso Live Server. Mantenha o terminal aberto enquanto usa o sistema.
 
 ## 4. Roteiro de teste manual
 
@@ -104,7 +102,7 @@ $env:GoogleBooks__ApiKey = "SUA_CHAVE_GOOGLE_BOOKS"
 dotnet run
 ```
 
-A API fica em `http://localhost:5131`. Abra o frontend com a extensão Live Server do VS Code (porta 5500, 5501 ou 5502). Não abra as páginas por `file://`.
+O sistema fica em `http://localhost:5131` (API e páginas no mesmo endereço). Não abra as páginas por `file://`.
 
 ## Atualização do banco
 

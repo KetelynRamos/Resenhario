@@ -1,4 +1,6 @@
-const API_URL = "http://localhost:5131/api";
+// Caminho relativo: o front é servido pela própria API (wwwroot), então
+// funciona em qualquer porta ou servidor sem precisar de CORS.
+const API_URL = "/api";
 const SESSION_KEY = "resenhario_usuario";
 
 function usuarioAtual() {

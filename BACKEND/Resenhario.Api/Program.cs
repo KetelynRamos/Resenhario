@@ -55,6 +55,12 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
+
+// O front (HTML, CSS e JS) fica em wwwroot/ e é servido pela própria API:
+// abrir http://localhost:5131 carrega o wwwroot/index.html.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
