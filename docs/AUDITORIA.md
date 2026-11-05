@@ -1,5 +1,7 @@
 # Auditoria de conformidade: Resenhário × Escopo
 
+> A situação atualizada de cada item está na seção **e)** no fim deste arquivo.
+
 > Data: 05/11/2026 · Base auditada: `RESENHARIO_AUDITADO.zip`, idêntico ao commit `8c439dd` de `KetelynRamos/resenhario`
 > Caminhos de código são relativos a `BACKEND/Resenhario.Api/`. As referências a `frontend/` agora ficam em `wwwroot/` (decisão D4).
 > Fonte da verdade: *Escopo Resenhário.pdf* (Universidade Positivo, Desenvolvimento de Software Visual)
@@ -209,9 +211,17 @@
 | P0-9: seed idempotente (Fase 4) | ✅ (imagens: rodar uma vez com internet e chaves) | `0a0791d` |
 | P0-10: banco na nuvem (Aiven) | ⏳ **Ação da equipe**: passo a passo no `LEIA-ME.md`, seção 2. Conferir com `/api/saude` | `ae20073`, `c3014e6` |
 | P1-1 a P1-8 e P1-10: visual (Fase 5) | ✅ | `a3ae175` … `df24bc3` |
-| P1-9: TMDB mais rápido (diretor só ao salvar) | ❌ Pendente | — |
+| P1-9: TMDB mais rápido (diretores em paralelo: 6,2 s → 0,7 s) | ✅ | `19cdb71` |
 | Ranking com mínimo de 2 avaliações e desempate | ✅ | `b5f7321` |
 | Roteiro da demo (Fase 6) | ✅ `docs/ROTEIRO_DEMO.md` | `cfb7352` |
-| P2-1 a P2-9: qualidade de código e documentação (Fase 7) | ⏳ Pendente | — |
+| P2-1: `LivroController` assíncrono | ✅ | `cf2b8ac` |
+| P2-2: POST com 201 Created | ✅ | `73563f3` |
+| P2-3: DTOs com `ReadFromJsonAsync` nas APIs externas | ✅ | `647c013` |
+| P2-4: POO, regras de status no Model `Estante` | ✅ | `56f7091` |
+| P2-5: remover a rota duplicada `/api/Review/ranking-adaptacoes` | ⏸️ **Aguarda autorização da equipe** (mantida e usando a mesma regra do ranking) | — |
+| P2-6: `Resenhario.Api.http` com todas as rotas | ✅ | `260fc57` |
+| P2-7: índices únicos (script 09) | ✅ (rodar no banco) | `9549da6` |
+| P2-8: documentação (`DOCUMENTACAO_TECNICA.md`, `GUIA_DEFESA.md`) | ✅ | `61476b4`, guia |
+| P2-9: comentários em português | ✅ | `71efad9` |
 
 Riscos resolvidos: R1, R3 (seed), R6, R7, R8, R9 (documentado), R10, R11, R12, R14. Em aberto: **R2** (banco na nuvem, ação da equipe), **R4/R5** (configurar as chaves do Google Books e do TMDB), R13 (os scripts SQL continuam sem `SET NAMES utf8mb4`; no Workbench isso não costuma causar problema).
