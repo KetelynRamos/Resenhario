@@ -99,8 +99,10 @@ public static class SeedImagens
                 if (volume is null) continue;
 
                 livro.CapaUrl = volume.VolumeInfo!.ImageLinks!.Thumbnail!.Replace("http://", "https://");
-                // Guarda o ID do Google só se nenhum outro livro do catálogo já usa esse volume.
-                if (livro.GoogleBId is null && !await db.Livros.AnyAsync(l => l.GoogleBId == volume.Id, ct))
+                // Guarda o ID do Google só se nenhum outro livro já usa esse volume: confere no banco
+                // e também nas alterações ainda não salvas (db.Livros.Local), já que o SaveChanges é no fim.
+                if (livro.GoogleBId is null && !db.Livros.Local.Any(l => l.GoogleBId == volume.Id)
+                    && !await db.Livros.AnyAsync(l => l.GoogleBId == volume.Id, ct))
                     livro.GoogleBId = volume.Id;
                 preenchidos++;
             }
