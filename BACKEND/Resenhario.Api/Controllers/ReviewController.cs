@@ -26,6 +26,14 @@ public class ReviewController : ControllerBase
         return Ok(resultado.Itens);
     }
 
+    // GET /api/Review/5 → 200 com a resenha ou 404
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Review>> GetReview(int id)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        return review is null ? NotFound() : Ok(review);
+    }
+
     [HttpGet("feed")]
     public async Task<IActionResult> Feed([FromQuery] int pagina = 1, [FromQuery] int tamanho = 10)
     {
@@ -124,7 +132,8 @@ public class ReviewController : ControllerBase
         review.DataCriacao = DateTime.UtcNow;
         _context.Reviews.Add(review);
         await _context.SaveChangesAsync();
-        return Ok(new { mensagem = "Resenha publicada.", review.IdReviews });
+        // 201 Created: informa o endereço do novo recurso (cabeçalho Location).
+        return CreatedAtAction(nameof(GetReview), new { id = review.IdReviews }, new { mensagem = "Resenha publicada.", review.IdReviews });
     }
 
     [Authorize]

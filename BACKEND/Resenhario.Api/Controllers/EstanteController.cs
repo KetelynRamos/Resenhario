@@ -44,6 +44,15 @@ public class EstanteController : ControllerBase
         return Ok(await query.ToListAsync());
     }
 
+    // GET /api/Estante/5 → um item da estante do usuário logado (404 se for de outra pessoa)
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Estante>> GetEstante(int id)
+    {
+        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var item = await _context.Estantes.FirstOrDefaultAsync(e => e.IdEstante == id && e.IdUsuario == usuarioId);
+        return item is null ? NotFound() : Ok(item);
+    }
+
     [HttpPost]
     public async Task<IActionResult> CriarEstante([FromBody] Estante estante)
     {
@@ -75,7 +84,7 @@ public class EstanteController : ControllerBase
         estante.DataAtualizacao = DateTime.UtcNow;
         _context.Estantes.Add(estante);
         await _context.SaveChangesAsync();
-        return Ok(new { mensagem = "Item adicionado à estante.", estante.IdEstante });
+        return CreatedAtAction(nameof(GetEstante), new { id = estante.IdEstante }, new { mensagem = "Item adicionado à estante.", estante.IdEstante });
     }
 
     [HttpPut("{id:int}")]

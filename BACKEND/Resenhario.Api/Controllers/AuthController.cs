@@ -66,7 +66,8 @@ public class AuthController : ControllerBase
 
         _context.Usuarios.Add(usuario);
         await _context.SaveChangesAsync();
-        return Ok(CriarResposta(usuario));
+        // 201 Created: a conta nova pode ser consultada em /api/Usuario/me (com o token).
+        return Created("/api/Usuario/me", CriarResposta(usuario));
     }
 
     [HttpPost("login")]

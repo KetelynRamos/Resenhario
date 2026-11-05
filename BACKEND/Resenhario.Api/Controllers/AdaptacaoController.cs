@@ -28,6 +28,14 @@ public class AdaptacaoController : ControllerBase
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um livro válido.")] int IdLivro,
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme);
 
+    // GET /api/Adaptacao/5 → 200 com o vínculo ou 404
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<Adaptacao>> GetAdaptacao(int id)
+    {
+        var adaptacao = await _context.Adaptacoes.FindAsync(id);
+        return adaptacao is null ? NotFound() : Ok(adaptacao);
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdaptacaoResposta>>> GetAdaptacoes()
     {
@@ -113,7 +121,7 @@ public class AdaptacaoController : ControllerBase
         };
         _context.Adaptacoes.Add(adaptacao);
         await _context.SaveChangesAsync();
-        return Ok(new { mensagem = "Adaptação vinculada com sucesso.", adaptacao.IdAdaptacoes });
+        return CreatedAtAction(nameof(GetAdaptacao), new { id = adaptacao.IdAdaptacoes }, new { mensagem = "Adaptação vinculada com sucesso.", adaptacao.IdAdaptacoes });
     }
 
     [Authorize] // Só usuários logados podem alterar o catálogo.
