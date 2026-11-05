@@ -28,7 +28,9 @@ async function api(caminho, opcoes = {}) {
         let mensagem = texto || `Erro HTTP ${resposta.status}`;
         try {
             const json = JSON.parse(texto);
-            mensagem = json.mensagem || json.title || json.detail || json.message || texto;
+            // Erros de validação (Data Annotations) chegam como { errors: { campo: [mensagens] } }.
+            const errosValidacao = json.errors ? Object.values(json.errors).flat() : [];
+            mensagem = json.mensagem || errosValidacao.join(" ") || json.detail || json.title || json.message || texto;
         } catch { /* A resposta pode ser texto simples. */ }
         if (resposta.status === 401) {
             // Token ausente ou expirado: limpa a sessão e explica o que fazer.

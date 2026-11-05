@@ -8,6 +8,8 @@ public class Serie
 {
     [Key]
     public int IdSerie { get; set; }
+    [Required(ErrorMessage = "O título da série é obrigatório.")]
+    [StringLength(200, ErrorMessage = "O título pode ter no máximo 200 caracteres.")]
     public string Titulo { get; set; } = string.Empty;
     public string? Sinopse { get; set; }
     public string? ImagemUrl { get; set; }

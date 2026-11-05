@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,9 @@ public class AdaptacaoController : ControllerBase
 
     public record AdaptacaoResposta(int IdAdaptacoes, int IdLivro, string TituloLivro,
         int IdFilme, string TituloFilme, string? PosterUrl, DateTime DataVinculo);
-    public record CriarAdaptacaoRequest(int IdLivro, int IdFilme);
+    public record CriarAdaptacaoRequest(
+        [Range(1, int.MaxValue, ErrorMessage = "Selecione um livro válido.")] int IdLivro,
+        [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme);
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdaptacaoResposta>>> GetAdaptacoes()

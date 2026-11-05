@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -23,8 +24,19 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
-    public record CadastroRequest(string Nome, string Email, string Senha);
-    public record LoginRequest(string Email, string Senha);
+    // Validação com Data Annotations direto nos parâmetros dos records.
+    public record CadastroRequest(
+        [Required(ErrorMessage = "Informe seu nome.")]
+        [StringLength(150, ErrorMessage = "O nome pode ter no máximo 150 caracteres.")] string Nome,
+        [Required(ErrorMessage = "Informe seu e-mail.")]
+        [EmailAddress(ErrorMessage = "Informe um e-mail válido.")]
+        [StringLength(150)] string Email,
+        [Required(ErrorMessage = "Informe uma senha.")]
+        [MinLength(8, ErrorMessage = "A senha deve ter pelo menos 8 caracteres.")] string Senha);
+
+    public record LoginRequest(
+        [Required(ErrorMessage = "Informe seu e-mail.")] string Email,
+        [Required(ErrorMessage = "Informe sua senha.")] string Senha);
     public record UsuarioResposta(int IdUsuario, string Nome, string Email, string Token);
 
     [HttpPost("cadastro")]
