@@ -124,7 +124,7 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### Trocar para o banco local (2 minutos)
 
-Pré-requisito (fazer na véspera): MySQL local com os scripts `01`, `05` e `08` rodados e a API iniciada uma vez apontando para ele, para o seed preencher os dados.
+Pré-requisito (fazer na véspera): MySQL local com os scripts `01`, `05`, `08` e `09` rodados e a API iniciada uma vez apontando para ele, para o seed preencher os dados.
 
 ```powershell
 cd BACKEND/Resenhario.Api

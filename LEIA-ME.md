@@ -27,7 +27,7 @@ O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita "Liv
 2. **Create service → MySQL → plano Free**. Escolha a nuvem/região oferecida e crie. Espere o status ficar **Running** (alguns minutos).
 3. Na aba **Overview → Connection information**, anote **Host**, **Port** (não é 3306!), **User** (`avnadmin`) e **Password**. O SSL é obrigatório (`ssl-mode: REQUIRED`).
 4. No **MySQL Workbench**, crie uma conexão com esses dados. Em *SSL*, escolha **Require**.
-5. Rode, nesta ordem, os scripts da pasta `BANCO DE DADOS/`: **`01_criar_banco.sql`**, **`05_atualizar_banco.sql`** e **`08_alinhar_escopo.sql`**. Eles criam o banco `resenhario_db` e as tabelas sem apagar nada.
+5. Rode, nesta ordem, os scripts da pasta `BANCO DE DADOS/`: **`01_criar_banco.sql`**, **`05_atualizar_banco.sql`**, **`08_alinhar_escopo.sql`** e **`09_indices_unicos.sql`**. Eles criam o banco `resenhario_db`, as tabelas e os índices únicos sem apagar nada.
 6. Grave a string de conexão na sua máquina (seção 3) usando o host e a porta do Aiven e `SslMode=Required`.
 7. Rode a API (seção 4): na primeira vez, ela mesma preenche o banco com os dados de demonstração.
 8. Confira em `http://localhost:5131/api/saude`: deve aparecer `"banco": "conectado"` e o host do Aiven.
@@ -39,7 +39,7 @@ O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita "Liv
 ### Opção B: banco local
 
 1. Abra o MySQL Workbench na sua máquina.
-2. Rode os mesmos scripts: `01_criar_banco.sql`, `05_atualizar_banco.sql` e `08_alinhar_escopo.sql`.
+2. Rode os mesmos scripts: `01_criar_banco.sql`, `05_atualizar_banco.sql`, `08_alinhar_escopo.sql` e `09_indices_unicos.sql`.
 3. Grave a string de conexão local (seção 3).
 
 ### Sobre os outros scripts
@@ -50,6 +50,7 @@ O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita "Liv
 | `03_consultas_teste.sql`, `04_relacionamentos.sql` | Consultas de exemplo, só leitura. |
 | `06_limpar_resenhas_de_teste.sql` | **Apaga** resenhas. Não rode no banco da nuvem. |
 | `07_migrar_notas_para_escala_1_a_5.sql` | Só para bancos antigos com notas de 0 a 10. |
+| `09_indices_unicos.sql` | Cria os índices únicos de e-mail e de par livro/filme. Se encontrar dados repetidos, só avisa. Pode rodar de novo sem problema. |
 
 ## 3. Segredos (fora do Git)
 
