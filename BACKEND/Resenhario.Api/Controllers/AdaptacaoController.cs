@@ -12,6 +12,11 @@ namespace Resenhario.Api.Controllers;
 public class AdaptacaoController : ControllerBase
 {
     private readonly AppDbContext _context;
+
+    // Só entram no ranking adaptações com pelo menos esta quantidade de notas de fidelidade:
+    // evita que um filme com uma única nota 5 fique à frente de outro avaliado por muita gente.
+    public const int MinimoAvaliacoesRanking = 2;
+
     public AdaptacaoController(AppDbContext context) => _context = context;
 
     // Dados completos de uma adaptação para o card "Livro vs. Filme".
@@ -74,9 +79,11 @@ public class AdaptacaoController : ControllerBase
                     .Select(r => (double?)r.NotaLivro).Average(),
                 TotalResenhasLivro = _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
             })
-        .Where(x => x.TotalAvaliacoes > 0)
+        .Where(x => x.TotalAvaliacoes >= MinimoAvaliacoesRanking)
         .OrderByDescending(x => x.MediaFidelidade)
         .ThenByDescending(x => x.TotalAvaliacoes)
+        .ThenByDescending(x => x.MediaNotaLivro) // desempate: o livro mais bem avaliado
+        .ThenBy(x => x.TituloFilme)            // e, por fim, ordem alfabética (resultado sempre igual)
         .Take(20)
         .ToListAsync();
         return Ok(ranking);

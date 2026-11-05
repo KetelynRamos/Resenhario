@@ -82,7 +82,7 @@ public class ReviewController : ControllerBase
                 .Select(r => (double?)r.NotaFidelidade).Average(),
             TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
         })
-        .Where(x => x.TotalAvaliacoes > 0)
+        .Where(x => x.TotalAvaliacoes >= AdaptacaoController.MinimoAvaliacoesRanking)
         .OrderByDescending(x => x.MediaFidelidade)
         .ThenByDescending(x => x.TotalAvaliacoes)
         .Take(20)

@@ -685,7 +685,7 @@ async function iniciarRanking() {
         const ranking = (await api("/Adaptacao/ranking")).slice(0, 10);
         if (!ranking.length) {
             lista.replaceChildren();
-            mostrarEstadoVazio(podio, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Ele aparece quando houver notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(podio, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Uma adaptação entra no ranking quando recebe pelo menos 2 notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
             return;
         }
         // No pódio o 1º lugar fica no meio: ordem visual 2º, 1º, 3º.
