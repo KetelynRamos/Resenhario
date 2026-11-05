@@ -621,6 +621,7 @@ footer strong { color: var(--texto-suave); font-family: var(--fonte-titulo); }
 .hero-acoes { display: flex; flex-wrap: wrap; gap: 12px; }
 .botao-grande { padding: 15px 28px; font-size: 1rem; }
 .hero-numeros { display: flex; flex-wrap: wrap; gap: clamp(20px, 4vw, 44px); margin-top: 10px; padding-top: 22px; border-top: 1px solid rgba(255, 255, 255, .08); }
+.hero-numeros:empty { display: none; } /* sem dados (API fora do ar): some com a linha divisória */
 .hero-numero { display: flex; flex-direction: column-reverse; }
 .hero-numero dd { font: 700 2.2rem/1 var(--fonte-titulo); color: var(--texto); }
 .hero-numero dt { color: var(--texto-apagado); font-size: .82rem; text-transform: uppercase; letter-spacing: .14em; }
