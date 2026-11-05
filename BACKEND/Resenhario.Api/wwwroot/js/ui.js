@@ -193,6 +193,34 @@ function valorEstrelas(nome) {
     return marcado ? Number(marcado.value) : null;
 }
 
+// ----- Chart.js: CDN com plano B local --------------------------------
+// Tenta o CDN (cdnjs); se a internet falhar, usa a cópia da mesma versão em /lib.
+const CHART_JS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
+const CHART_JS_LOCAL = "/lib/chart.umd.min.js";
+
+function carregarScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+async function carregarChartJs() {
+    if (window.Chart) return true;
+    try { await carregarScript(CHART_JS_CDN); }
+    catch { try { await carregarScript(CHART_JS_LOCAL); } catch { return false; } }
+    if (!window.Chart) return false;
+    // Visual padrão dos gráficos combinando com o tema escuro do site.
+    Chart.defaults.color = "#b3a998";
+    Chart.defaults.borderColor = "rgba(255, 255, 255, .07)";
+    Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
+    return true;
+}
+
 // ----- Setas dos carrosséis (no celular basta arrastar com o dedo) --
 function configurarCarrosseis() {
     document.querySelectorAll(".carrossel").forEach(carrossel => {

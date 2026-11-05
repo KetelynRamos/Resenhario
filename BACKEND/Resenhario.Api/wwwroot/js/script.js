@@ -367,6 +367,7 @@ async function iniciarEstante() {
     try {
         const itens = await api("/Estante");
         renderizarEstatisticasLeitura(itens);
+        configurarFiltrosEstante(area);
         if (!itens.length) {
             mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
             return;
@@ -394,6 +395,7 @@ function cardEstante(item, itens, area) {
             item.dataAtualizacao = new Date().toISOString();
             card.dataset.status = item.status;
             renderizarEstatisticasLeitura(itens);
+            aplicarFiltroEstante(area);
             avisar(`“${item.titulo}” agora está em “${item.status}”.`);
         } catch (err) {
             select.value = anterior;
@@ -431,6 +433,68 @@ function renderizarEstatisticasLeitura(itens) {
         card.append(el("span", "estatistica-icone", icone), el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
         return card;
     }));
+    renderizarGraficos(livros);
+}
+
+// Gráficos da estante com Chart.js. Guardamos os gráficos para recriá-los
+// quando o status de um livro muda (destroy + new é o jeito mais simples).
+const graficos = {};
+
+async function renderizarGraficos(livros) {
+    const canvasStatus = document.getElementById("grafico-status");
+    if (!canvasStatus) return;
+    if (!await carregarChartJs()) {
+        document.getElementById("graficos").replaceChildren(el("p", "mensagem", "Os gráficos não puderam ser carregados agora; os números acima continuam valendo."));
+        return;
+    }
+
+    // 1) Rosca: quantos livros em cada status.
+    const cores = ["#ffd27a", "#f2b33d", "#6cc38a", "#a3202f"];
+    graficos.status?.destroy();
+    graficos.status = new Chart(canvasStatus, {
+        type: "doughnut",
+        data: {
+            labels: STATUS_LIVRO,
+            datasets: [{ data: STATUS_LIVRO.map(s => livros.filter(l => l.status === s).length), backgroundColor: cores, borderColor: "#18150f", borderWidth: 3 }]
+        },
+        options: { maintainAspectRatio: false, cutout: "62%", plugins: { legend: { position: "bottom", labels: { usePointStyle: true, padding: 16 } } } }
+    });
+
+    // 2) Barras: livros marcados como "Lido" em cada um dos últimos 6 meses.
+    const meses = [];
+    const hoje = new Date();
+    for (let i = 5; i >= 0; i--) meses.push(new Date(hoje.getFullYear(), hoje.getMonth() - i, 1));
+    const lidosNoMes = mes => livros.filter(l => {
+        if (l.status !== "Lido") return false;
+        const data = new Date(/[zZ]$/.test(l.dataAtualizacao) ? l.dataAtualizacao : l.dataAtualizacao + "Z");
+        return data.getFullYear() === mes.getFullYear() && data.getMonth() === mes.getMonth();
+    }).length;
+    graficos.meses?.destroy();
+    graficos.meses = new Chart(document.getElementById("grafico-meses"), {
+        type: "bar",
+        data: {
+            labels: meses.map(m => m.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")),
+            datasets: [{ label: "Livros lidos", data: meses.map(lidosNoMes), backgroundColor: "#f2b33d", hoverBackgroundColor: "#ffd27a", borderRadius: 6, maxBarThickness: 42 }]
+        },
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
+    });
+}
+
+// Filtros da prateleira: Todos, cada status de leitura ou só filmes.
+let filtroEstante = "todos";
+function configurarFiltrosEstante(area) {
+    document.querySelectorAll(".filtro").forEach(botao => botao.addEventListener("click", () => {
+        filtroEstante = botao.dataset.filtro;
+        document.querySelectorAll(".filtro").forEach(b => b.classList.toggle("ativo", b === botao));
+        aplicarFiltroEstante(area);
+    }));
+}
+
+function aplicarFiltroEstante(area) {
+    area.querySelectorAll(".card-obra").forEach(card => {
+        const ehFilme = STATUS_FILME.includes(card.dataset.status);
+        card.hidden = filtroEstante === "filmes" ? !ehFilme : filtroEstante !== "todos" && card.dataset.status !== filtroEstante;
+    });
 }
 
 // ---------------------------------------------------------------------

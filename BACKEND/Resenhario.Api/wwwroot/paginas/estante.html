@@ -36,9 +36,27 @@
         </section>
         <section id="painel-estatisticas">
             <div id="estatisticas-leitura" class="estatisticas"></div>
+            <div id="graficos" class="graficos">
+                <figure class="painel grafico">
+                    <figcaption>Livros por status</figcaption>
+                    <div class="grafico-area"><canvas id="grafico-status" role="img" aria-label="Gráfico de rosca com a quantidade de livros em cada status de leitura"></canvas></div>
+                </figure>
+                <figure class="painel grafico">
+                    <figcaption>Livros lidos nos últimos 6 meses</figcaption>
+                    <div class="grafico-area"><canvas id="grafico-meses" role="img" aria-label="Gráfico de barras com os livros lidos por mês"></canvas></div>
+                </figure>
+            </div>
         </section>
         <section class="secao">
             <div class="titulo-secao"><div><p class="sobretitulo">Prateleira</p><h2>Seus livros e filmes</h2></div></div>
+            <div class="filtros" role="group" aria-label="Filtrar a estante">
+                <button type="button" class="filtro ativo" data-filtro="todos">Todos</button>
+                <button type="button" class="filtro" data-filtro="Quero ler">Quero ler</button>
+                <button type="button" class="filtro" data-filtro="Lendo">Lendo</button>
+                <button type="button" class="filtro" data-filtro="Lido">Lido</button>
+                <button type="button" class="filtro" data-filtro="Abandonado">Abandonado</button>
+                <button type="button" class="filtro" data-filtro="filmes">Filmes</button>
+            </div>
             <div id="itens-estante" class="grade-obras"></div>
         </section>
     </main>

@@ -729,8 +729,19 @@ fieldset { border: 0; }
 fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 .campo-fidelidade { padding: 14px 16px; border-radius: var(--raio-pequeno); background: rgba(163, 32, 47, .08); border: 1px solid rgba(163, 32, 47, .35); animation: entrar .3s ease; }
 
+/* 14. Estante: gráficos e filtros ----------------------------------------- */
+.graficos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 18px; margin-top: 18px; }
+.grafico { display: grid; gap: 12px; }
+.grafico figcaption { font: 700 1.05rem var(--fonte-titulo); }
+.grafico-area { position: relative; height: 240px; }
+.filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.filtro { padding: 8px 16px; background: transparent; color: var(--texto-suave); border: 1px solid var(--borda-forte); font-size: .85rem; }
+.filtro:hover { background: rgba(255, 255, 255, .05); color: var(--texto); box-shadow: none; }
+.filtro.ativo { background: var(--ambar); border-color: var(--ambar); color: #1a1205; }
+
 /* Responsivo: celular ------------------------------------------------- */
 @media (max-width: 860px) {
+    .graficos { grid-template-columns: 1fr; }
     .hero-grade { grid-template-columns: 1fr; }
     .convite { flex-direction: column; align-items: flex-start; }
     .layout-resenha { grid-template-columns: 1fr; }
