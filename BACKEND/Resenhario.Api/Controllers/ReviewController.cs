@@ -16,7 +16,8 @@ public class ReviewController : ControllerBase
 
     public record ReviewResposta(int IdReviews, int IdUsuario, string NomeUsuario,
         int? IdLivro, string? Titulo, int? NotaLivro, string? Comentario, DateTime DataCriacao,
-        int? IdAdaptacao, string? TituloFilme, int? NotaFidelidade);
+        int? IdAdaptacao, string? TituloFilme, int? NotaFidelidade,
+        string? CapaUrl, string? PosterUrl, int? AnoFilme, double? MediaNotaLivro, int TotalResenhasLivro);
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ReviewResposta>>> GetReviews()
@@ -53,7 +54,16 @@ public class ReviewController : ControllerBase
                 r.IdAdaptacao,
                 _context.Filmes.Where(f => _context.Adaptacoes.Any(a => a.IdAdaptacoes == r.IdAdaptacao && a.IdFilme == f.IdFilme))
                     .Select(f => f.Titulo).FirstOrDefault(),
-                r.NotaFidelidade))
+                r.NotaFidelidade,
+                // Imagens para os cards do feed (capa do livro e pôster do filme avaliado).
+                _context.Livros.Where(l => l.IdLivros == r.IdLivro).Select(l => l.CapaUrl).FirstOrDefault(),
+                _context.Filmes.Where(f => _context.Adaptacoes.Any(a => a.IdAdaptacoes == r.IdAdaptacao && a.IdFilme == f.IdFilme))
+                    .Select(f => f.PosterUrl).FirstOrDefault(),
+                _context.Filmes.Where(f => _context.Adaptacoes.Any(a => a.IdAdaptacoes == r.IdAdaptacao && a.IdFilme == f.IdFilme))
+                    .Select(f => f.AnoLancamento).FirstOrDefault(),
+                // Média da comunidade para o livro: permite comparar a nota deste leitor com a dos outros.
+                _context.Reviews.Where(x => x.IdLivro == r.IdLivro && x.NotaLivro != null).Average(x => (double?)x.NotaLivro),
+                _context.Reviews.Count(x => x.IdLivro == r.IdLivro && x.NotaLivro != null)))
             .ToListAsync();
         return (resultado, total);
     }

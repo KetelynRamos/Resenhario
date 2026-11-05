@@ -16,7 +16,8 @@ public class EstanteController : ControllerBase
     public EstanteController(AppDbContext context) => _context = context;
 
     public record EstanteItem(int IdEstante, int IdUsuario, int? IdLivros, int? IdFilme,
-        int? IdSerie, string Status, string? Titulo, string? Autor, string Tipo, DateTime DataAtualizacao);
+        int? IdSerie, string Status, string? Titulo, string? Autor, string Tipo, DateTime DataAtualizacao,
+        string? Imagem);
 
     [HttpGet]
     public async Task<IActionResult> GetEstantes()
@@ -37,7 +38,8 @@ public class EstanteController : ControllerBase
             select new EstanteItem(e.IdEstante, e.IdUsuario, e.IdLivros, e.IdFilme, e.IdSerie,
                 e.Status, l != null ? l.Titulo : f != null ? f.Titulo : s != null ? s.Titulo : "Item",
                 l != null ? l.Autor : f != null ? f.Diretor : null,
-                l != null ? "Livro" : f != null ? "Filme" : "Série", e.DataAtualizacao);
+                l != null ? "Livro" : f != null ? "Filme" : "Série", e.DataAtualizacao,
+                l != null ? l.CapaUrl : f != null ? f.PosterUrl : s != null ? s.ImagemUrl : null);
 
         return Ok(await query.ToListAsync());
     }
