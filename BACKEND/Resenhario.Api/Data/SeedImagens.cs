@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Resenhario.Api.Models.Externos;
 
 namespace Resenhario.Api.Data;
 
@@ -10,13 +10,7 @@ namespace Resenhario.Api.Data;
 // Se a API estiver fora do ar ou sem chave, apenas registra no log e segue em frente.
 public static class SeedImagens
 {
-    // DTOs: só os campos do JSON que usamos. O System.Text.Json preenche estes records.
-    private record TmdbBusca(List<TmdbFilme> Results);
-    private record TmdbFilme(int Id, [property: JsonPropertyName("poster_path")] string? PosterPath);
-    private record GoogleBusca(List<GoogleVolume>? Items);
-    private record GoogleVolume(string Id, GoogleInfo VolumeInfo);
-    private record GoogleInfo(GoogleImagens? ImageLinks);
-    private record GoogleImagens(string? Thumbnail, string? SmallThumbnail);
+    // Os DTOs das APIs ficam em Models/Externos (os mesmos usados pelo CatalogoExternoController).
 
     // URLs de exemplo dos scripts antigos de teste contam como "sem imagem".
     private static bool SemImagem(string? url) =>
@@ -60,8 +54,8 @@ public static class SeedImagens
                     logger.LogWarning("Seed: TMDB respondeu HTTP {Status}; pôsteres interrompidos.", (int)resposta.StatusCode);
                     break;
                 }
-                var busca = await resposta.Content.ReadFromJsonAsync<TmdbBusca>(ct);
-                var achado = busca?.Results.FirstOrDefault(r => r.PosterPath != null);
+                var busca = await resposta.Content.ReadFromJsonAsync<TmdbBuscaResposta>(ct);
+                var achado = busca?.Results?.FirstOrDefault(r => r.PosterPath != null);
                 if (achado is null) continue;
 
                 filme.PosterUrl = "https://image.tmdb.org/t/p/w500" + achado.PosterPath;
@@ -100,11 +94,11 @@ public static class SeedImagens
                     logger.LogWarning("Seed: Google Books respondeu HTTP {Status}; capas interrompidas.", (int)resposta.StatusCode);
                     break;
                 }
-                var busca = await resposta.Content.ReadFromJsonAsync<GoogleBusca>(ct);
-                var volume = busca?.Items?.FirstOrDefault(v => v.VolumeInfo.ImageLinks?.Thumbnail != null);
+                var busca = await resposta.Content.ReadFromJsonAsync<GoogleBooksResposta>(ct);
+                var volume = busca?.Items?.FirstOrDefault(v => v.VolumeInfo?.ImageLinks?.Thumbnail != null);
                 if (volume is null) continue;
 
-                livro.CapaUrl = volume.VolumeInfo.ImageLinks!.Thumbnail!.Replace("http://", "https://");
+                livro.CapaUrl = volume.VolumeInfo!.ImageLinks!.Thumbnail!.Replace("http://", "https://");
                 // Guarda o ID do Google só se nenhum outro livro do catálogo já usa esse volume.
                 if (livro.GoogleBId is null && !await db.Livros.AnyAsync(l => l.GoogleBId == volume.Id, ct))
                     livro.GoogleBId = volume.Id;
