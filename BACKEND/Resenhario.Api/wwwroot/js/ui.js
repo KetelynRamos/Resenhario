@@ -162,6 +162,23 @@ function criarAvatar(nome) {
     return avatar;
 }
 
+// ----- Setas dos carrosséis (no celular basta arrastar com o dedo) --
+function configurarCarrosseis() {
+    document.querySelectorAll(".carrossel").forEach(carrossel => {
+        const moldura = el("div", "carrossel-moldura");
+        carrossel.parentNode.insertBefore(moldura, carrossel);
+        moldura.appendChild(carrossel);
+        [["‹", -1, "anterior"], ["›", 1, "seta-proxima"]].forEach(([simbolo, direcao, classe]) => {
+            const seta = el("button", `seta-carrossel ${classe}`, simbolo);
+            seta.type = "button";
+            seta.setAttribute("aria-label", direcao < 0 ? "Voltar" : "Avançar");
+            // Rola 80% da largura visível do carrossel.
+            seta.addEventListener("click", () => carrossel.scrollBy({ left: direcao * carrossel.clientWidth * .8, behavior: "smooth" }));
+            moldura.appendChild(seta);
+        });
+    });
+}
+
 // ----- Card "Livro vs. Filme": o diferencial do Resenhário ----------
 // Recebe uma adaptação (da rota /api/Adaptacao ou /api/Adaptacao/ranking) e mostra
 // capa × pôster lado a lado com a nota média do livro e a fidelidade média do filme.
@@ -211,4 +228,4 @@ function criarDuelo(item, destaque = false) {
     return card;
 }
 
-document.addEventListener("DOMContentLoaded", configurarCabecalho);
+document.addEventListener("DOMContentLoaded", () => { configurarCabecalho(); configurarCarrosseis(); });
