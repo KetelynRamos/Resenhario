@@ -74,14 +74,12 @@ public class EstanteController : ControllerBase
             e.IdFilme == estante.IdFilme && e.IdSerie == estante.IdSerie);
         if (duplicado) return Conflict("Esse item já está na sua estante.");
 
-        var statusPermitidos = estante.IdLivros.HasValue
-            ? new[] { "Quero ler", "Lendo", "Lido", "Abandonado" }
-            : new[] { "Quero ver", "Assistindo", "Assistido" };
-        if (string.IsNullOrWhiteSpace(estante.Status)) estante.Status = statusPermitidos[0];
-        if (!statusPermitidos.Contains(estante.Status)) return BadRequest("Status inválido para o tipo de item.");
+        // Sem status informado, começa no primeiro da lista ("Quero ler" ou "Quero ver").
+        if (string.IsNullOrWhiteSpace(estante.Status)) estante.Status = estante.StatusPermitidos()[0];
+        if (!estante.StatusValido(estante.Status)) return BadRequest("Status inválido para o tipo de item.");
 
         estante.IdUsuario = usuarioId; // Nunca confiar no ID enviado pelo navegador.
-        estante.DataAtualizacao = DateTime.UtcNow;
+        estante.AtualizarStatus(estante.Status);
         _context.Estantes.Add(estante);
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetEstante), new { id = estante.IdEstante }, new { mensagem = "Item adicionado à estante.", estante.IdEstante });
@@ -94,12 +92,9 @@ public class EstanteController : ControllerBase
         var estante = await _context.Estantes.FirstOrDefaultAsync(e => e.IdEstante == id && e.IdUsuario == usuarioId);
         if (estante is null) return NotFound();
 
-        var statusValidos = estante.IdLivros.HasValue
-            ? new[] { "Quero ler", "Lendo", "Lido", "Abandonado" }
-            : new[] { "Quero ver", "Assistindo", "Assistido" };
-        if (dados is null || !statusValidos.Contains(dados.Status)) return BadRequest("Status inválido.");
-        estante.Status = dados.Status;
-        estante.DataAtualizacao = DateTime.UtcNow;
+        if (dados is null || !estante.StatusValido(dados.Status))
+            return BadRequest($"Status inválido. Use: {string.Join(", ", estante.StatusPermitidos())}.");
+        estante.AtualizarStatus(dados.Status);
         await _context.SaveChangesAsync();
         return NoContent();
     }
