@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resenhário · Do filme ao livro</title>
+    <meta name="description" content="Descubra os livros por trás dos filmes, compare a fidelidade das adaptações e converse com outros leitores.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <!-- Tipografia: Fraunces (títulos, serifada) + Inter (texto). Sem internet, cai para Georgia/sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="topo">
+        <a class="marca" href="/index.html"><span class="marca-icone" aria-hidden="true">▶</span>Resenhário</a>
+        <button class="menu-botao" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">☰</button>
+        <nav id="menu" aria-label="Navegação principal">
+            <a href="/index.html">Início</a>
+            <a href="/paginas/livros.html">Livros</a>
+            <a href="/paginas/filmes.html">Filmes</a>
+            <a href="/paginas/feed.html">Feed</a>
+            <a href="/paginas/ranking.html">Ranking</a>
+            <a href="/paginas/reviews.html">Resenhar</a>
+            <a href="/paginas/estante.html">Minha estante</a>
+            <a class="link-conta" href="/paginas/login.html">Entrar</a>
+        </nav>
+    </header>
+
+    <main id="home">
+        <section class="hero">
+            <div id="hero-fundo" class="hero-fundo" aria-hidden="true"></div>
+            <div class="hero-grade">
+                <div class="hero-conteudo">
+                    <p class="sobretitulo">Livros × Filmes</p>
+                    <h1>O filme acabou. <em>A história continua no livro.</em></h1>
+                    <p class="hero-texto">Descubra os livros por trás dos filmes que você ama, compare a fidelidade de cada adaptação e converse com quem leu e assistiu.</p>
+                    <div class="hero-acoes">
+                        <a id="hero-cta" class="botao botao-grande" href="/paginas/login.html#cadastro">Criar minha estante</a>
+                        <a class="botao botao-fantasma botao-grande" href="/paginas/ranking.html">Ver o ranking</a>
+                    </div>
+                    <dl id="hero-numeros" class="hero-numeros"></dl>
+                </div>
+                <div class="hero-destaque">
+                    <p class="hero-selo">🏆 Adaptação mais fiel, segundo a comunidade</p>
+                    <div id="hero-duelo"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="pagina home-conteudo">
+            <section>
+                <div class="titulo-secao"><div><p class="sobretitulo">Livro vs. Filme</p><h2>Quem fez jus ao livro?</h2></div><a href="/paginas/ranking.html">Ranking completo →</a></div>
+                <div id="inicio-duelos" class="grade-duelos"></div>
+            </section>
+            <section class="secao">
+                <div class="titulo-secao"><div><p class="sobretitulo">Vire a página</p><h2>Livros que viraram filme</h2></div><a href="/paginas/livros.html">Ver todos →</a></div>
+                <div id="inicio-livros" class="carrossel"></div>
+            </section>
+            <section class="secao">
+                <div class="titulo-secao"><div><p class="sobretitulo">Nas telas</p><h2>As adaptações</h2></div><a href="/paginas/filmes.html">Ver todos →</a></div>
+                <div id="inicio-filmes" class="carrossel"></div>
+            </section>
+            <section class="secao">
+                <div class="titulo-secao"><div><p class="sobretitulo">Comunidade</p><h2>Acabou de sair no feed</h2></div><a href="/paginas/feed.html">Ver o feed →</a></div>
+                <div id="inicio-feed" class="grade-feed"></div>
+            </section>
+            <section id="convite" class="secao convite">
+                <div>
+                    <p class="sobretitulo">Sua vez</p>
+                    <h2>Viu o filme? Conte se o livro vale a pena.</h2>
+                    <p class="texto-suave">Monte sua estante, dê a sua nota para o livro e para a fidelidade da adaptação e compare com o resto da comunidade.</p>
+                </div>
+                <a class="botao botao-grande" href="/paginas/login.html#cadastro">Entrar na comunidade</a>
+            </section>
+        </div>
+    </main>
+
+    <footer><strong>Resenhário</strong> · O filme acabou. A história continua no livro. · Projeto acadêmico, Universidade Positivo, 2026</footer>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

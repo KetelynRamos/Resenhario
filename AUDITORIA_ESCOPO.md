@@ -1,3 +1,5 @@
+> **Documento histórico (antes de 05/11/2026).** Vários pontos abaixo já foram resolvidos. A auditoria atual está em [`docs/AUDITORIA.md`](docs/AUDITORIA.md) e as instruções de execução no [`LEIA-ME.md`](LEIA-ME.md).
+
 # Auditoria de alinhamento — Resenhário
 
 ## Requisitos implementados nesta revisão
@@ -31,7 +33,7 @@ Este ambiente de edição não possui o .NET SDK nem acesso ao MySQL do usuário
 
 ## Divergências e pontos de atenção identificados na conferência
 
-- **Nome do produto:** o PDF de escopo chama a plataforma de “LivreFlix”, mas o código, as páginas e o README usam “Resenhário”. É necessário padronizar o nome antes da entrega.
+- **Nome do produto:** decidido pela equipe: **Resenhário** em todo o projeto (o PDF cita “LivreFlix”, nome provisório).
 - **Framework:** o PDF especifica .NET 10, e o projeto também está configurado para `net10.0`. A afirmação anterior do README de que o PDF citava .NET 8 estava incorreta e foi corrigida.
 - **Banco de dados:** o projeto depende de MySQL e da execução dos scripts `01_criar_banco.sql` e `05_atualizar_banco.sql`; em bases antigas, também é necessária a migração `08_alinhar_escopo.sql`. A aplicação não vai funcionar com a senha placeholder `COLOQUE_SUA_SENHA`.
 - **TMDB:** pesquisa de filmes depende de `Tmdb__ReadAccessToken`; sem token, a rota retorna HTTP 503 por configuração ausente.

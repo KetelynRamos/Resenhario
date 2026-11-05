@@ -1,0 +1,134 @@
+### Exemplos de requisições da API do Resenhário
+### No VS Code (extensão REST Client) ou no Visual Studio: clique em "Send Request" acima de cada bloco.
+### 1) Rode a requisição de LOGIN; 2) copie o "token" da resposta para a variável @token abaixo.
+
+@base = http://localhost:5131
+@token = COLE_AQUI_O_TOKEN_DO_LOGIN
+
+### Saúde: API e banco conectados? (200 ou 503)
+GET {{base}}/api/saude
+
+### ===================== Autenticação =====================
+
+### Cadastro → 201 Created (400 se faltar dado, 409 se o e-mail já existir)
+POST {{base}}/api/Auth/cadastro
+Content-Type: application/json
+
+{ "nome": "Pessoa Teste", "email": "pessoa.teste@email.com", "senha": "senhaforte123" }
+
+### Login → 200 com o token JWT (401 se a senha estiver errada)
+POST {{base}}/api/Auth/login
+Content-Type: application/json
+
+{ "email": "ketelyn@resenhario.dev", "senha": "Resenhario2026" }
+
+### Meus dados (exige token) → 200
+GET {{base}}/api/Usuario/me
+Authorization: Bearer {{token}}
+
+### ===================== Catálogo =====================
+
+### Livros do catálogo → 200
+GET {{base}}/api/Livro
+
+### Um livro → 200 ou 404
+GET {{base}}/api/Livro/1
+
+### Médias da comunidade de um livro (nota da obra + fidelidade de cada adaptação)
+GET {{base}}/api/Livro/1/medias
+
+### Buscar no Google Books → 200 (502 se a API externa falhar)
+GET {{base}}/api/Livro/buscar?q=Duna
+
+### Cadastrar livro (exige token) → 201 Created, 400 (validação) ou 409 (duplicado)
+POST {{base}}/api/Livro
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "titulo": "Coraline", "autor": "Neil Gaiman", "sinopse": "Uma porta secreta leva a outra casa.", "capaUrl": null }
+
+### Validação: título vazio → 400 Bad Request com as mensagens das Data Annotations
+POST {{base}}/api/Livro
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "titulo": "", "autor": "" }
+
+### Atualizar livro (exige token) → 204 No Content ou 404
+PUT {{base}}/api/Livro/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "titulo": "O Senhor dos Anéis: A Sociedade do Anel", "autor": "J.R.R. Tolkien" }
+
+### Excluir livro com vínculos → 409 Conflict (sem token → 401)
+DELETE {{base}}/api/Livro/1
+Authorization: Bearer {{token}}
+
+### Filmes do catálogo → 200
+GET {{base}}/api/Filme
+
+### Buscar no TMDB (pôster e diretor) → 200, 503 sem token configurado, 502 se o TMDB falhar
+GET {{base}}/api/Filme/buscar?q=Coraline
+
+### ===================== Adaptações (Livro ↔ Filme) =====================
+
+### Todas as adaptações com médias → 200
+GET {{base}}/api/Adaptacao
+
+### Ranking (mínimo de 2 avaliações de fidelidade) → 200
+GET {{base}}/api/Adaptacao/ranking
+
+### Vincular livro e filme (exige token) → 201, 400 ou 409 (já vinculado)
+POST {{base}}/api/Adaptacao
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idLivro": 1, "idFilme": 1 }
+
+### ===================== Estante (exige token) =====================
+
+### Minha estante → 200
+GET {{base}}/api/Estante
+Authorization: Bearer {{token}}
+
+### Adicionar livro à estante → 201 (409 se já estiver)
+POST {{base}}/api/Estante
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idLivros": 3, "status": "Quero ler" }
+
+### Mudar status → 204 (400 se o status não existir)
+PUT {{base}}/api/Estante/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "Lido" }
+
+### Remover da estante → 204 ou 404
+DELETE {{base}}/api/Estante/1
+Authorization: Bearer {{token}}
+
+### ===================== Resenhas =====================
+
+### Feed paginado → 200
+GET {{base}}/api/Review/feed?pagina=1&tamanho=5
+
+### Publicar resenha com dupla nota (exige token) → 201
+POST {{base}}/api/Review
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idLivro": 3, "notaLivro": 5, "idAdaptacao": null, "notaFidelidade": null, "comentario": "Leitura obrigatória." }
+
+### Nota fora de 1 a 5 → 400 Bad Request
+POST {{base}}/api/Review
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "idLivro": 3, "notaLivro": 7, "comentario": "Nota inválida" }
+
+### Excluir minha resenha → 204 (404 se for de outra pessoa)
+DELETE {{base}}/api/Review/1
+Authorization: Bearer {{token}}

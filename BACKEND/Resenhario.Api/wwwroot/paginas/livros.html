@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livros · Resenhário</title>
+    <meta name="description" content="Pesquise livros no Google Books e adicione ao catálogo do Resenhário.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+    <!-- Tipografia: Fraunces (títulos, serifada) + Inter (texto). Sem internet, cai para Georgia/sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="topo">
+        <a class="marca" href="/index.html"><span class="marca-icone" aria-hidden="true">▶</span>Resenhário</a>
+        <button class="menu-botao" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">☰</button>
+        <nav id="menu" aria-label="Navegação principal">
+            <a href="/index.html">Início</a>
+            <a href="/paginas/livros.html">Livros</a>
+            <a href="/paginas/filmes.html">Filmes</a>
+            <a href="/paginas/feed.html">Feed</a>
+            <a href="/paginas/ranking.html">Ranking</a>
+            <a href="/paginas/reviews.html">Resenhar</a>
+            <a href="/paginas/estante.html">Minha estante</a>
+            <a class="link-conta" href="/paginas/login.html">Entrar</a>
+        </nav>
+    </header>
+
+    <main class="pagina">
+        <section class="cabecalho-pagina">
+            <p class="sobretitulo">Google Books</p>
+            <h1>Encontre o livro por trás do filme</h1>
+            <p>Pesquise qualquer título, autor ou ISBN e adicione ao catálogo do Resenhário.</p>
+        </section>
+        <form id="form-busca-livros" class="busca" role="search">
+            <label for="termo-livro" class="sr-only">Título, autor ou ISBN</label>
+            <input id="termo-livro" type="search" placeholder="Ex.: Duna, Saramago, Cidade de Deus…" required>
+            <button type="submit">Pesquisar</button>
+        </form>
+        <p class="busca-fonte">Resultados fornecidos pela Google Books API.</p>
+        <p id="mensagem-busca" class="mensagem" aria-live="polite"></p>
+        <div id="resultados-busca" class="grade-obras"></div>
+
+        <section class="secao">
+            <div class="titulo-secao"><div><p class="sobretitulo">Catálogo</p><h2>Livros no Resenhário</h2></div></div>
+            <div id="lista-livros" class="grade-obras"></div>
+        </section>
+    </main>
+
+    <footer><strong>Resenhário</strong> · O filme acabou. A história continua no livro. · Projeto acadêmico, Universidade Positivo, 2026</footer>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>
