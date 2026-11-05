@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Resenhario.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,7 +51,22 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
         .AllowAnyHeader()
         .AllowAnyMethod()));
 
-builder.Services.AddOpenApi();
+// Documento OpenAPI (/openapi/v1.json), lido pela tela do Swagger.
+// O transformer registra o esquema "Bearer" para o botão Authorize aceitar o token JWT.
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, context, cancellationToken) =>
+{
+    document.Components ??= new OpenApiComponents();
+    document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+    document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Cole o token recebido em /api/Auth/login (sem a palavra Bearer)."
+    };
+    document.Security = [new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] }];
+    return Task.CompletedTask;
+}));
 var app = builder.Build();
 
 // Tratamento global de erros: qualquer exceção não tratada vira uma resposta
@@ -65,7 +81,12 @@ app.UseExceptionHandler(erro => erro.Run(async context =>
     });
 }));
 
-if (app.Environment.IsDevelopment()) app.MapOpenApi();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    // Tela do Swagger para testar a API: http://localhost:5131/swagger
+    app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Resenhário API"));
+}
 app.UseHttpsRedirection();
 
 // O front (HTML, CSS e JS) fica em wwwroot/ e é servido pela própria API:
