@@ -117,4 +117,36 @@ app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Rota de saúde (Minimal API): confirma se a API está no ar e se o banco responde.
+// Útil antes da apresentação: abra http://localhost:5131/api/saude
+app.MapGet("/api/saude", async (IServiceProvider servicos) =>
+{
+    try
+    {
+        // O DbContext é criado aqui dentro do try porque, com o banco fora do ar,
+        // a própria criação já falha (o Pomelo consulta a versão do MySQL ao conectar).
+        using var scope = servicos.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return Results.Ok(new
+        {
+            api = "ok",
+            banco = "conectado",
+            servidorBanco = db.Database.GetDbConnection().DataSource,
+            livros = await db.Livros.CountAsync(),
+            resenhas = await db.Reviews.CountAsync()
+        });
+    }
+    catch (Exception ex)
+    {
+        // 503 = serviço indisponível. Em Development mostramos o motivo para facilitar o diagnóstico.
+        return Results.Json(new
+        {
+            api = "ok",
+            banco = "sem conexão",
+            motivo = app.Environment.IsDevelopment() ? ex.Message : "Confira a string de conexão."
+        }, statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+});
+
 app.Run();
