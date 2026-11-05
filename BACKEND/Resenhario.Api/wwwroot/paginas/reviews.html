@@ -38,10 +38,10 @@
             <section class="painel">
                 <form id="form-review">
                     <div class="campo"><label for="review-livro">Livro</label><select id="review-livro" required><option value="">Carregando livros…</option></select></div>
-                    <div class="campo" id="campo-nota-livro"><label for="review-nota">Sua nota para o livro (1 a 5)</label><input id="review-nota" type="number" min="1" max="5" step="1" required></div>
+                    <fieldset class="campo"><legend>📖 Sua nota para o livro</legend><div id="estrelas-livro"></div></fieldset>
                     <div class="campo"><label for="review-adaptacao">Viu alguma adaptação?</label><select id="review-adaptacao"><option value="">Não vi nenhuma adaptação</option></select></div>
-                    <div class="campo" id="campo-fidelidade" hidden><label for="review-nota-fidelidade">Fidelidade do filme ao livro (1 a 5)</label><input id="review-nota-fidelidade" type="number" min="1" max="5" step="1"></div>
-                    <div class="campo"><label for="review-comentario">Sua resenha</label><textarea id="review-comentario" maxlength="5000" required placeholder="O filme fez jus ao livro? Vale a pena ler depois de assistir?"></textarea></div>
+                    <fieldset class="campo campo-fidelidade" id="campo-fidelidade" hidden><legend>🎬 O quanto o filme foi fiel ao livro?</legend><div id="estrelas-fidelidade"></div></fieldset>
+                    <div class="campo"><label for="review-comentario">Sua resenha</label><textarea id="review-comentario" maxlength="5000" required placeholder="O filme fez jus ao livro? Vale a pena ler depois de assistir?"></textarea><small id="contador-comentario" class="contador">0/5000</small></div>
                     <button type="submit">Publicar resenha</button>
                 </form>
             </section>

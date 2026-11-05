@@ -162,6 +162,37 @@ function criarAvatar(nome) {
     return avatar;
 }
 
+// ----- Seletor de estrelas (formulário de resenha) -------------------
+// São 5 radio buttons (um por nota) estilizados como estrelas. Ficam em ordem
+// invertida (5 → 1) para o CSS conseguir "acender" as estrelas anteriores com o seletor ~.
+function criarSeletorEstrelas(nome, legendas) {
+    const grupo = el("div", "seletor-estrelas");
+    grupo.setAttribute("role", "radiogroup");
+    const legenda = el("span", "estrelas-legenda", "Escolha de 1 a 5 estrelas");
+    for (let valor = 5; valor >= 1; valor--) {
+        const radio = el("input", "sr-only");
+        radio.type = "radio";
+        radio.name = nome;
+        radio.id = `${nome}-${valor}`;
+        radio.value = valor;
+        radio.addEventListener("change", () => legenda.textContent = `${valor}/5 · ${legendas[valor - 1]}`);
+        const rotulo = el("label", "", "★");
+        rotulo.htmlFor = radio.id;
+        rotulo.title = `${valor} de 5: ${legendas[valor - 1]}`;
+        grupo.append(radio, rotulo);
+    }
+    const caixa = el("div", "seletor-estrelas-caixa");
+    caixa.append(grupo, legenda);
+    caixa.limpar = () => legenda.textContent = "Escolha de 1 a 5 estrelas";
+    return caixa;
+}
+
+// Valor escolhido num seletor de estrelas (ou null se nenhum).
+function valorEstrelas(nome) {
+    const marcado = document.querySelector(`input[name="${nome}"]:checked`);
+    return marcado ? Number(marcado.value) : null;
+}
+
 // ----- Setas dos carrosséis (no celular basta arrastar com o dedo) --
 function configurarCarrosseis() {
     document.querySelectorAll(".carrossel").forEach(carrossel => {

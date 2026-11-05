@@ -444,6 +444,15 @@ async function iniciarResenhas() {
     const livroSelect = document.getElementById("review-livro");
     const adaptacaoSelect = document.getElementById("review-adaptacao");
     const campoFidelidade = document.getElementById("campo-fidelidade");
+    const comentario = document.getElementById("review-comentario");
+    const contador = document.getElementById("contador-comentario");
+
+    // Estrelas no lugar dos campos numéricos.
+    const estrelasLivro = criarSeletorEstrelas("nota-livro", ["Não gostei", "Fraco", "Bom", "Muito bom", "Excelente"]);
+    const estrelasFidelidade = criarSeletorEstrelas("nota-fidelidade", ["Quase outra história", "Muitas liberdades", "Fiel no essencial", "Bem fiel", "Fidelíssimo"]);
+    document.getElementById("estrelas-livro").appendChild(estrelasLivro);
+    document.getElementById("estrelas-fidelidade").appendChild(estrelasFidelidade);
+    comentario.addEventListener("input", () => contador.textContent = `${comentario.value.length}/5000`);
 
     try {
         const [livros, adaptacoes] = await Promise.all([api("/Livro"), api("/Adaptacao")]);
@@ -464,14 +473,16 @@ async function iniciarResenhas() {
         e.preventDefault();
         if (!exigirLogin()) return;
         const idLivro = Number(livroSelect.value), idAdaptacao = Number(adaptacaoSelect.value || 0);
-        const notaLivro = Number(document.getElementById("review-nota").value);
-        const notaFidelidade = idAdaptacao ? Number(document.getElementById("review-nota-fidelidade").value) : null;
-        const comentario = document.getElementById("review-comentario").value.trim();
+        const notaLivro = valorEstrelas("nota-livro");
+        const notaFidelidade = idAdaptacao ? valorEstrelas("nota-fidelidade") : null;
+        const texto = comentario.value.trim();
         if (!idLivro) { avisar("Selecione um livro.", "erro"); return; }
-        if (idAdaptacao && !(notaFidelidade >= 1 && notaFidelidade <= 5)) { avisar("Dê uma nota de 1 a 5 para a fidelidade do filme.", "erro"); return; }
+        if (!notaLivro) { avisar("Dê de 1 a 5 estrelas para o livro.", "erro"); return; }
+        if (idAdaptacao && !notaFidelidade) { avisar("Dê de 1 a 5 estrelas para a fidelidade do filme.", "erro"); return; }
         try {
-            await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario, notaFidelidade, assistiuFilme: !!idAdaptacao }) });
+            await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario: texto, notaFidelidade, assistiuFilme: !!idAdaptacao }) });
             form.reset(); atualizarAdaptacoes();
+            estrelasLivro.limpar(); estrelasFidelidade.limpar(); contador.textContent = "0/5000";
             avisar("Resenha publicada! Ela já aparece no feed.");
             await carregarUltimasResenhas();
         } catch (err) { avisar(err.message, "erro"); }

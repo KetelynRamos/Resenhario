@@ -702,6 +702,33 @@ footer strong { color: var(--texto-suave); font-family: var(--fonte-titulo); }
 .comparativo-abaixo { border-left-color: var(--erro); }
 .comparativo-igual { border-left-color: var(--ambar); }
 
+/* 13. Seletor de estrelas ------------------------------------------------- */
+.seletor-estrelas-caixa { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; }
+/* row-reverse: no HTML as estrelas vão de 5 a 1; na tela aparecem de 1 a 5. */
+.seletor-estrelas { --cor-estrela: var(--ambar); display: inline-flex; flex-direction: row-reverse; }
+#estrelas-fidelidade .seletor-estrelas { --cor-estrela: #ff7a86; } /* fidelidade usa o vermelho de "filme" */
+.seletor-estrelas label {
+    padding: 0 3px;
+    color: var(--borda-forte);
+    font-size: 2.2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s, transform .15s;
+}
+/* Estrela marcada e todas "antes" dela (que no HTML vêm depois) ficam acesas. */
+.seletor-estrelas input:checked ~ label { color: var(--cor-estrela); }
+/* Passando o mouse: apaga tudo e acende até a estrela sob o cursor. */
+.seletor-estrelas:hover input ~ label { color: var(--borda-forte); }
+.seletor-estrelas input + label:hover, .seletor-estrelas input + label:hover ~ label { color: var(--cor-estrela); }
+.seletor-estrelas label:hover { transform: scale(1.18); }
+.seletor-estrelas input:focus-visible + label { outline: 2px solid var(--ambar); border-radius: 4px; }
+.estrelas-legenda { color: var(--texto-suave); font-size: .88rem; }
+.contador { align-self: flex-end; color: var(--texto-apagado); font-size: .78rem; }
+fieldset { border: 0; }
+/* float tira a legenda de cima da borda do fieldset e a coloca dentro da caixa */
+fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
+.campo-fidelidade { padding: 14px 16px; border-radius: var(--raio-pequeno); background: rgba(163, 32, 47, .08); border: 1px solid rgba(163, 32, 47, .35); animation: entrar .3s ease; }
+
 /* Responsivo: celular ------------------------------------------------- */
 @media (max-width: 860px) {
     .hero-grade { grid-template-columns: 1fr; }
