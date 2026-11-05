@@ -1,130 +1,68 @@
-// Caminho relativo: o front é servido pela própria API (wwwroot), então
-// funciona em qualquer porta ou servidor sem precisar de CORS.
-const API_URL = "/api";
-const SESSION_KEY = "resenhario_usuario";
-
-function usuarioAtual() {
-    try {
-        const usuario = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-        // Remove a sessão antiga, que guardava somente o ID e não possuía token assinado.
-        if (usuario && !usuario.token) {
-            localStorage.removeItem(SESSION_KEY);
-            return null;
-        }
-        return usuario;
-    } catch {
-        localStorage.removeItem(SESSION_KEY);
-        return null;
-    }
-}
-
-async function api(caminho, opcoes = {}) {
-    const usuario = usuarioAtual();
-    const headers = { "Content-Type": "application/json", ...(opcoes.headers || {}) };
-    if (usuario?.token) headers.Authorization = `Bearer ${usuario.token}`;
-    const resposta = await fetch(`${API_URL}${caminho}`, { ...opcoes, headers });
-    if (!resposta.ok) {
-        const texto = await resposta.text();
-        let mensagem = texto || `Erro HTTP ${resposta.status}`;
-        try {
-            const json = JSON.parse(texto);
-            // Erros de validação (Data Annotations) chegam como { errors: { campo: [mensagens] } }.
-            const errosValidacao = json.errors ? Object.values(json.errors).flat() : [];
-            mensagem = json.mensagem || errosValidacao.join(" ") || json.detail || json.title || json.message || texto;
-        } catch { /* A resposta pode ser texto simples. */ }
-        if (resposta.status === 401) {
-            // Token ausente ou expirado: limpa a sessão e explica o que fazer.
-            if (usuario?.token) localStorage.removeItem(SESSION_KEY);
-            mensagem = "Sua sessão expirou ou você não entrou na conta. Faça login para continuar.";
-        }
-        throw new Error(mensagem);
-    }
-    if (resposta.status === 204) return null;
-    const texto = await resposta.text();
-    return texto ? JSON.parse(texto) : null;
-}
-
-async function buscarCatalogo(tipo) { return api(`/${tipo}`); }
+// =====================================================================
+// script.js: lógica de cada página. Cada função "iniciar..." só roda
+// se a página tiver o elemento correspondente (por isso um único arquivo
+// serve para o site inteiro).
+// Depende de api.js (chamadas à API) e ui.js (componentes visuais).
+// =====================================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-    carregarCatalogo();
-    configurarBuscaLivros();
-    configurarBuscaFilmes();
-    configurarBuscaSeries();
-    configurarLogin();
-    configurarEstante();
-    configurarReviews();
-    configurarAdaptacoes();
-    atualizarNavegacao();
+    iniciarHome();
+    iniciarPaginaLivros();
+    iniciarPaginaFilmes();
+    iniciarPaginaSeries();
+    iniciarLogin();
+    iniciarEstante();
+    iniciarResenhas();
+    iniciarFeed();
+    iniciarRanking();
 });
 
-function atualizarNavegacao() {
-    const usuario = usuarioAtual();
-    document.querySelectorAll('a[href*="login.html"]').forEach(a => {
-        if (usuario) a.textContent = `Olá, ${usuario.nome}`;
+// ---------------------------------------------------------------------
+// Catálogo: livros e filmes salvos no banco
+// ---------------------------------------------------------------------
+function cardLivro(livro, comEstante) {
+    return criarCardObra({
+        titulo: livro.titulo, subtitulo: livro.autor, imagem: livro.capaUrl, tipo: "Livro",
+        acoes: comEstante ? [{ texto: "＋ Minha estante", acao: () => adicionarAEstante({ idLivros: livro.idLivros }) }] : []
     });
 }
 
-async function carregarCatalogo() {
-    const caminho = location.pathname.toLowerCase();
-    if (caminho.endsWith("/index.html") || caminho.endsWith("/")) {
-        await Promise.allSettled([
-            carregarLivrosEm("inicio-livros", "inicio-mensagem-livros"),
-            carregarFilmesEm("inicio-filmes", "inicio-mensagem-filmes"),
-            carregarSeriesEm("inicio-series", "inicio-mensagem-series")
-        ]);
-    }
-    if (caminho.endsWith("/livros.html")) await carregarLivrosEm("lista-livros", "mensagem-catalogo", true);
-    if (caminho.endsWith("/filmes.html")) await carregarFilmesEm("lista-filmes", "mensagem-filmes", true);
-    if (caminho.endsWith("/series.html")) await carregarSeriesEm("lista-series", "mensagem-catalogo-series", true);
+function cardFilme(filme, comEstante) {
+    const detalhe = [filme.anoLancamento, filme.diretor].filter(Boolean).join(" · ");
+    return criarCardObra({
+        titulo: filme.titulo, subtitulo: detalhe, imagem: filme.posterUrl, tipo: "Filme",
+        acoes: comEstante ? [{ texto: "＋ Minha estante", acao: () => adicionarAEstante({ idFilme: filme.idFilme }) }] : []
+    });
 }
 
-function criarCapaVazia(titulo) {
-    const div = document.createElement("div");
-    div.className = "capa-vazia";
-    div.textContent = titulo || "Sem imagem";
-    return div;
+async function carregarLivrosEm(container, comEstante = false) {
+    if (!container) return;
+    mostrarSkeleton(container, 6);
+    try {
+        const livros = await api("/Livro");
+        if (!livros.length) {
+            mostrarEstadoVazio(container, { icone: "📚", titulo: "O catálogo ainda está vazio", texto: "Pesquise no Google Books e adicione o primeiro livro." });
+            return;
+        }
+        container.replaceChildren(...livros.map(l => cardLivro(l, comEstante)));
+    } catch (e) {
+        mostrarEstadoVazio(container, { erro: true, titulo: "Não foi possível carregar os livros", texto: e.message });
+    }
 }
 
-function criarCard(item) {
-    const card = document.createElement("article");
-    card.className = "card-capa";
-    if (item.imagem) {
-        const img = document.createElement("img");
-        img.src = item.imagem;
-        img.alt = `Capa de ${item.titulo || "obra"}`;
-        img.loading = "lazy";
-        img.onerror = () => img.replaceWith(criarCapaVazia(item.titulo));
-        card.appendChild(img);
-    } else card.appendChild(criarCapaVazia(item.titulo));
-
-    const info = document.createElement("div");
-    info.className = "card-info";
-    const titulo = document.createElement("h3");
-    titulo.textContent = item.titulo || "Sem título";
-    const autor = document.createElement("p");
-    autor.textContent = item.autor || "";
-    const descricao = document.createElement("p");
-    descricao.textContent = item.descricao || "";
-    info.append(titulo, autor, descricao);
-    if (item.botao) {
-        const botao = document.createElement("button");
-        botao.textContent = item.botao.texto;
-        botao.addEventListener("click", item.botao.acao);
-        info.appendChild(botao);
+async function carregarFilmesEm(container, comEstante = false) {
+    if (!container) return;
+    mostrarSkeleton(container, 6);
+    try {
+        const filmes = await api("/Filme");
+        if (!filmes.length) {
+            mostrarEstadoVazio(container, { icone: "🎬", titulo: "Nenhum filme no catálogo", texto: "Pesquise no TMDB e adicione o primeiro filme." });
+            return;
+        }
+        container.replaceChildren(...filmes.map(f => cardFilme(f, comEstante)));
+    } catch (e) {
+        mostrarEstadoVazio(container, { erro: true, titulo: "Não foi possível carregar os filmes", texto: e.message });
     }
-    card.appendChild(info);
-    return card;
-}
-
-function exigirLogin() {
-    const usuario = usuarioAtual();
-    if (!usuario?.token) {
-        alert("Entre ou crie uma conta para usar sua estante e publicar resenhas.");
-        location.href = "login.html";
-        return null;
-    }
-    return usuario;
 }
 
 async function adicionarAEstante(ids) {
@@ -135,473 +73,430 @@ async function adicionarAEstante(ids) {
             method: "POST",
             body: JSON.stringify({ idLivros: ids.idLivros || null, idFilme: ids.idFilme || null, idSerie: ids.idSerie || null, status })
         });
-        alert("Adicionado à sua estante!");
+        avisar(`Adicionado à sua estante como “${status}”.`);
     } catch (e) {
-        alert(e.message.includes("já está") ? "Esse item já está na sua estante." : `Não foi possível salvar: ${e.message}`);
+        avisar(e.message.includes("já está") ? "Esse item já está na sua estante." : e.message, "erro");
     }
 }
 
-async function carregarLivrosEm(listaId, mensagemId, permitirEstante = false) {
-    const lista = document.getElementById(listaId), msg = document.getElementById(mensagemId);
-    if (!lista || !msg) return;
-    try {
-        const livros = await buscarCatalogo("Livro");
-        lista.replaceChildren();
-        if (!livros.length) { msg.textContent = "Nenhum livro cadastrado ainda."; return; }
-        msg.textContent = "";
-        livros.forEach(l => lista.appendChild(criarCard({
-            titulo: l.titulo, autor: l.autor, imagem: l.capaUrl, descricao: l.sinopse,
-            botao: permitirEstante ? { texto: "＋ Minha estante", acao: () => adicionarAEstante({ idLivros: l.idLivros }) } : null
-        })));
-    } catch (e) { msg.textContent = "Não foi possível carregar os livros. Confira se a API está ligada."; console.error(e); }
+// ---------------------------------------------------------------------
+// Página inicial
+// ---------------------------------------------------------------------
+async function iniciarHome() {
+    if (!document.getElementById("home")) return;
+    await Promise.allSettled([
+        carregarLivrosEm(document.getElementById("inicio-livros")),
+        carregarFilmesEm(document.getElementById("inicio-filmes"))
+    ]);
 }
 
-async function carregarFilmesEm(listaId, mensagemId, permitirEstante = false) {
-    const lista = document.getElementById(listaId), msg = document.getElementById(mensagemId);
-    if (!lista || !msg) return;
-    try {
-        const filmes = await buscarCatalogo("Filme");
-        lista.replaceChildren();
-        if (!filmes.length) { msg.textContent = "Nenhum filme cadastrado ainda."; return; }
-        msg.textContent = "";
-        filmes.forEach(f => lista.appendChild(criarCard({
-            titulo: f.titulo, autor: f.diretor, imagem: f.posterUrl,
-            descricao: f.anoLancamento ? `Lançamento: ${f.anoLancamento}` : "",
-            botao: permitirEstante ? { texto: "＋ Minha estante", acao: () => adicionarAEstante({ idFilme: f.idFilme }) } : null
-        })));
-    } catch (e) { msg.textContent = "Não foi possível carregar os filmes. Confira se a API está ligada."; console.error(e); }
-}
-
-async function carregarSeriesEm(listaId, mensagemId, permitirEstante = false) {
-    const lista = document.getElementById(listaId), msg = document.getElementById(mensagemId);
-    if (!lista || !msg) return;
-    try {
-        const series = await buscarCatalogo("Serie");
-        lista.replaceChildren();
-        if (!series.length) { msg.textContent = "Nenhuma série cadastrada ainda. Pesquise abaixo para adicionar."; return; }
-        msg.textContent = "";
-        series.forEach(s => lista.appendChild(criarCard({
-            titulo: s.titulo, imagem: s.imagemUrl,
-            descricao: s.dataEstreia ? `Estreia: ${s.dataEstreia}` : s.sinopse,
-            botao: permitirEstante ? { texto: "＋ Minha estante", acao: () => adicionarAEstante({ idSerie: s.idSerie }) } : null
-        })));
-    } catch (e) { msg.textContent = "Não foi possível carregar séries. Confira se a tabela Series existe e se a API está ligada."; console.error(e); }
-}
-
-function configurarBuscaLivros() {
+// ---------------------------------------------------------------------
+// Livros: busca no Google Books (via nossa API) + catálogo
+// ---------------------------------------------------------------------
+function iniciarPaginaLivros() {
     const form = document.getElementById("form-busca-livros");
     if (!form) return;
+    const catalogo = document.getElementById("lista-livros");
+    carregarLivrosEm(catalogo, true);
+
     form.addEventListener("submit", async e => {
         e.preventDefault();
         const termo = document.getElementById("termo-livro").value.trim();
-        const msg = document.getElementById("mensagem-busca"), area = document.getElementById("resultados-busca");
+        const area = document.getElementById("resultados-busca"), msg = document.getElementById("mensagem-busca");
         if (!termo) return;
-        area.replaceChildren(); msg.textContent = "Pesquisando livros no Google Books...";
+        msg.textContent = "Pesquisando no Google Books…";
+        mostrarSkeleton(area, 6);
         try {
             const livros = await api(`/Livro/buscar?q=${encodeURIComponent(termo)}`);
-            if (!livros.length) { msg.textContent = "Nenhum livro encontrado."; return; }
-            msg.textContent = `${livros.length} resultado(s). Clique para salvar no catálogo.`;
-            livros.forEach(livro => {
-                const card = criarCard({ titulo: livro.titulo, autor: livro.autor, imagem: livro.capaUrl,
-                    descricao: livro.anoPublicacao ? `Publicado em ${livro.anoPublicacao}` : livro.sinopse || "" });
-                const botao = document.createElement("button");
-                botao.textContent = "Adicionar ao catálogo";
-                botao.addEventListener("click", () => salvarLivro(livro, botao, msg));
-                card.querySelector(".card-info").appendChild(botao);
-                area.appendChild(card);
-            });
-        } catch (err) { console.error(err); msg.textContent = `Não foi possível pesquisar livros: ${err.message}`; }
+            if (!livros.length) {
+                msg.textContent = "";
+                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum livro encontrado", texto: "Tente outro título ou o nome do autor." });
+                return;
+            }
+            msg.textContent = `${livros.length} resultado(s) no Google Books.`;
+            area.replaceChildren(...livros.map(livro => criarCardObra({
+                titulo: livro.titulo, subtitulo: livro.autor, imagem: livro.capaUrl, tipo: "Livro",
+                detalhe: livro.anoPublicacao ? `Publicado em ${livro.anoPublicacao.slice(0, 4)}` : "",
+                acoes: [{ texto: "Adicionar ao catálogo", acao: botao => salvarLivro(livro, botao, catalogo) }]
+            })));
+        } catch (err) {
+            msg.textContent = "";
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no Google Books falhou", texto: `${err.message} Os livros já salvos no catálogo continuam disponíveis abaixo.` });
+        }
     });
 }
 
-async function salvarLivro(livro, botao, msg) {
+async function salvarLivro(livro, botao, catalogo) {
     if (!exigirLogin()) return;
-    botao.disabled = true; botao.textContent = "Salvando...";
+    botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Livro", { method: "POST", body: JSON.stringify({ googleBId: livro.id, titulo: livro.titulo, autor: livro.autor || "Autor não informado", sinopse: livro.sinopse || null, isbn: livro.isbn || null, capaUrl: livro.capaUrl || null }) });
-        botao.textContent = "Adicionado";
-        msg.textContent = `“${livro.titulo}” foi adicionado ao catálogo.`;
-        await Promise.allSettled([carregarLivrosEm("lista-livros", "mensagem-catalogo", true), carregarLivrosEm("inicio-livros", "inicio-mensagem-livros")]);
+        botao.textContent = "✓ No catálogo";
+        avisar(`“${livro.titulo}” foi adicionado ao catálogo.`);
+        await carregarLivrosEm(catalogo, true);
     } catch (e) {
-        if (e.message.toLowerCase().includes("já está") || e.message.toLowerCase().includes("isbn") || e.message.toLowerCase().includes("catálogo")) {
-            botao.textContent = "Já cadastrado";
-            botao.disabled = true;
-        } else { botao.disabled = false; botao.textContent = "Tentar novamente"; }
-        msg.textContent = `Não foi possível salvar o livro: ${e.message}`;
+        const jaExiste = /já está|isbn|catálogo/i.test(e.message);
+        botao.disabled = jaExiste;
+        botao.textContent = jaExiste ? "Já no catálogo" : "Tentar novamente";
+        avisar(e.message, "erro");
     }
 }
 
-function configurarBuscaFilmes() {
+// ---------------------------------------------------------------------
+// Filmes: busca no TMDB, vínculo com livros e catálogo
+// ---------------------------------------------------------------------
+function iniciarPaginaFilmes() {
     const form = document.getElementById("form-busca-filmes");
     if (!form) return;
+    const catalogo = document.getElementById("lista-filmes");
+    carregarFilmesEm(catalogo, true);
+    iniciarVinculoAdaptacoes();
+
     form.addEventListener("submit", async e => {
         e.preventDefault();
         const termo = document.getElementById("termo-filme").value.trim();
-        const msg = document.getElementById("mensagem-busca-filmes"), area = document.getElementById("resultados-filmes");
+        const area = document.getElementById("resultados-filmes"), msg = document.getElementById("mensagem-busca-filmes");
         if (!termo) return;
-        area.replaceChildren(); msg.textContent = "Pesquisando filmes no TMDB...";
+        msg.textContent = "Pesquisando no TMDB…";
+        mostrarSkeleton(area, 6);
         try {
             const filmes = await api(`/Filme/buscar?q=${encodeURIComponent(termo)}`);
-            if (!filmes.length) { msg.textContent = "Nenhum filme encontrado."; return; }
-            msg.textContent = `${filmes.length} filme(s) encontrado(s).`;
-            filmes.forEach(f => {
-                const card = criarCard({ titulo: f.titulo, autor: f.diretor || "Diretor não informado", imagem: f.posterUrl, descricao: f.anoLancamento ? `Lançamento: ${f.anoLancamento}` : "" });
-                const botao = document.createElement("button");
-                botao.textContent = "Adicionar ao catálogo";
-                botao.addEventListener("click", () => salvarFilme(f, botao, msg));
-                card.querySelector(".card-info").appendChild(botao);
-                area.appendChild(card);
-            });
-        } catch (err) { console.error(err); msg.textContent = `Não foi possível pesquisar filmes: ${err.message}`; }
+            if (!filmes.length) {
+                msg.textContent = "";
+                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum filme encontrado", texto: "Tente o título original ou outro termo." });
+                return;
+            }
+            msg.textContent = `${filmes.length} filme(s) no TMDB.`;
+            area.replaceChildren(...filmes.map(f => criarCardObra({
+                titulo: f.titulo, imagem: f.posterUrl, tipo: "Filme",
+                subtitulo: [f.anoLancamento, f.diretor].filter(Boolean).join(" · "),
+                acoes: [{ texto: "Adicionar ao catálogo", acao: botao => salvarFilme(f, botao, catalogo) }]
+            })));
+        } catch (err) {
+            msg.textContent = "";
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no TMDB falhou", texto: `${err.message} Os filmes já salvos continuam disponíveis abaixo.` });
+        }
     });
 }
 
-async function salvarFilme(filme, botao, msg) {
+async function salvarFilme(filme, botao, catalogo) {
     if (!exigirLogin()) return;
-    botao.disabled = true; botao.textContent = "Salvando...";
+    botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Filme", { method: "POST", body: JSON.stringify({ tmdbId: filme.tmdbId, titulo: filme.titulo, diretor: filme.diretor || null, anoLancamento: filme.anoLancamento, posterUrl: filme.posterUrl || null }) });
-        botao.textContent = "Adicionado";
-        msg.textContent = `“${filme.titulo}” foi salvo no catálogo.`;
-        await Promise.allSettled([carregarFilmesEm("lista-filmes", "mensagem-filmes", true), carregarFilmesEm("inicio-filmes", "inicio-mensagem-filmes")]);
-        await carregarOpcoesAdaptacoes();
+        botao.textContent = "✓ No catálogo";
+        avisar(`“${filme.titulo}” foi salvo no catálogo.`);
+        await carregarFilmesEm(catalogo, true);
+        await iniciarVinculoAdaptacoes(true);
     } catch (e) {
-        if (e.message.toLowerCase().includes("catálogo") || e.message.toLowerCase().includes("já")) { botao.textContent = "Já cadastrado"; botao.disabled = true; }
-        else { botao.disabled = false; botao.textContent = "Tentar novamente"; }
-        msg.textContent = `Não foi possível salvar: ${e.message}`;
+        botao.disabled = false; botao.textContent = "Tentar novamente";
+        avisar(e.message, "erro");
     }
 }
 
-function configurarBuscaSeries() {
+let vinculoConfigurado = false;
+async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
+    const form = document.getElementById("form-vincular-adaptacao");
+    const lista = document.getElementById("lista-adaptacoes");
+    if (!form || !lista) return;
+    const livroSelect = document.getElementById("adaptacao-livro"), filmeSelect = document.getElementById("adaptacao-filme");
+
+    try {
+        const [livros, filmes, adaptacoes] = await Promise.all([api("/Livro"), api("/Filme"), api("/Adaptacao")]);
+        preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
+        preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
+        renderizarAdaptacoes(lista, adaptacoes);
+    } catch (e) {
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar as adaptações", texto: e.message });
+    }
+
+    if (somenteRecarregar || vinculoConfigurado) return;
+    vinculoConfigurado = true;
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        if (!exigirLogin()) return;
+        try {
+            await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro: Number(livroSelect.value), idFilme: Number(filmeSelect.value) }) });
+            avisar("Adaptação vinculada! Agora ela pode receber notas de fidelidade.");
+            await iniciarVinculoAdaptacoes(true);
+        } catch (err) { avisar(err.message, "erro"); }
+    });
+}
+
+// Lista de adaptações já vinculadas (substituída pelo card Livro vs. Filme).
+function renderizarAdaptacoes(lista, adaptacoes) {
+    if (!adaptacoes.length) {
+        mostrarEstadoVazio(lista, { icone: "🔗", titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
+        return;
+    }
+    lista.replaceChildren(...adaptacoes.map(a => el("p", "linha-adaptacao", `${a.tituloLivro} → ${a.tituloFilme}`)));
+}
+
+function preencherSelect(select, itens, idCampo, textoCampo, placeholder) {
+    if (!select) return;
+    const opcao = new Option(placeholder, "");
+    opcao.disabled = true; opcao.selected = true;
+    select.replaceChildren(opcao, ...itens.map(item => new Option(item[textoCampo], item[idCampo])));
+}
+
+// ---------------------------------------------------------------------
+// Séries (fora do escopo: página escondida do menu, mantida no projeto)
+// ---------------------------------------------------------------------
+function iniciarPaginaSeries() {
     const form = document.getElementById("form-busca-series");
     if (!form) return;
     form.addEventListener("submit", async e => {
         e.preventDefault();
         const termo = document.getElementById("termo-serie").value.trim();
-        const msg = document.getElementById("mensagem-busca-series"), area = document.getElementById("resultados-series");
-        area.replaceChildren(); msg.textContent = "Pesquisando séries...";
+        const area = document.getElementById("resultados-series");
+        mostrarSkeleton(area, 6);
         try {
-            const resultados = await api(`/Serie/buscar?q=${encodeURIComponent(termo)}`);
-            if (!resultados.length) { msg.textContent = "Nenhuma série encontrada."; return; }
-            msg.textContent = `${Math.min(resultados.length, 12)} série(s) encontrada(s).`;
-            resultados.slice(0, 12).forEach(resultado => {
-                const serie = {
-                    fonteId: resultado.fonteId, titulo: resultado.titulo || "Série",
-                    sinopse: resultado.sinopse || "",
-                    imagemUrl: resultado.imagemUrl || "", dataEstreia: resultado.dataEstreia || ""
-                };
-                const card = criarCard({ titulo: serie.titulo, imagem: serie.imagemUrl, descricao: serie.dataEstreia ? `Estreia: ${serie.dataEstreia}` : serie.sinopse });
-                const botao = document.createElement("button"); botao.textContent = "Adicionar ao catálogo";
-                botao.addEventListener("click", async () => {
-                    if (!exigirLogin()) return;
-                    botao.disabled = true; botao.textContent = "Salvando...";
-                    try {
-                        await api("/Serie", { method: "POST", body: JSON.stringify(serie) });
-                        botao.textContent = "Adicionado"; msg.textContent = `“${serie.titulo}” foi salva no catálogo.`;
-                        await Promise.allSettled([carregarSeriesEm("lista-series", "mensagem-catalogo-series", true), carregarSeriesEm("inicio-series", "inicio-mensagem-series")]);
-                    } catch (err) { botao.disabled = false; botao.textContent = "Tentar novamente"; msg.textContent = err.message; }
-                });
-                card.querySelector(".card-info").appendChild(botao); area.appendChild(card);
-            });
-        } catch (err) { console.error(err); msg.textContent = `Não foi possível pesquisar séries: ${err.message}`; }
+            const series = await api(`/Serie/buscar?q=${encodeURIComponent(termo)}`);
+            area.replaceChildren(...series.map(s => criarCardObra({ titulo: s.titulo, imagem: s.imagemUrl, tipo: "Filme", subtitulo: s.dataEstreia || "" })));
+        } catch (err) { mostrarEstadoVazio(area, { erro: true, titulo: "A busca falhou", texto: err.message }); }
     });
 }
 
-function configurarLogin() {
+// ---------------------------------------------------------------------
+// Login e cadastro
+// ---------------------------------------------------------------------
+function iniciarLogin() {
     const form = document.getElementById("form-login");
     if (!form) return;
-    const alternar = document.getElementById("alternar-cadastro"), campos = document.getElementById("campos-cadastro");
-    const msg = document.getElementById("mensagem-login"), sair = document.getElementById("sair-conta");
-    let cadastro = false;
+    const abas = document.querySelectorAll(".aba-login");
+    const camposCadastro = document.getElementById("campos-cadastro");
+    const conectado = document.getElementById("conectado");
+    let modoCadastro = location.hash === "#cadastro";
+
     const render = () => {
-        if (campos) campos.hidden = !cadastro;
-        form.querySelector('button[type="submit"]').textContent = cadastro ? "Criar conta" : "Entrar";
-        if (alternar) alternar.textContent = cadastro ? "Já tenho uma conta" : "Criar conta";
         const usuario = usuarioAtual();
-        if (sair) sair.hidden = !usuario;
-        if (usuario) msg.textContent = `Você está conectado como ${usuario.nome}.`;
+        form.hidden = !!usuario;
+        document.querySelector(".abas-login").hidden = !!usuario;
+        conectado.hidden = !usuario;
+        if (usuario) document.getElementById("conectado-nome").textContent = usuario.nome;
+        camposCadastro.hidden = !modoCadastro;
+        document.getElementById("nome").required = modoCadastro;
+        form.querySelector('button[type="submit"]').textContent = modoCadastro ? "Criar minha conta" : "Entrar";
+        abas.forEach(aba => aba.classList.toggle("ativa", (aba.dataset.modo === "cadastro") === modoCadastro));
     };
-    alternar?.addEventListener("click", () => { cadastro = !cadastro; render(); });
-    sair?.addEventListener("click", () => {
-        localStorage.removeItem(SESSION_KEY); render(); atualizarNavegacao();
-        msg.textContent = "Você saiu da conta.";
-    });
+    abas.forEach(aba => aba.addEventListener("click", () => { modoCadastro = aba.dataset.modo === "cadastro"; render(); }));
+    document.getElementById("sair-conta").addEventListener("click", () => { sair(); avisar("Você saiu da conta."); render(); });
     render();
+
     form.addEventListener("submit", async e => {
-        e.preventDefault(); msg.textContent = "Processando...";
+        e.preventDefault();
+        const botao = form.querySelector('button[type="submit"]');
         const email = document.getElementById("email").value.trim(), senha = document.getElementById("senha").value;
+        const dados = modoCadastro ? { nome: document.getElementById("nome").value.trim(), email, senha } : { email, senha };
+        botao.disabled = true;
         try {
-            const dados = cadastro
-                ? { nome: document.getElementById("nome").value.trim(), email, senha }
-                : { email, senha };
-            const usuario = await api(cadastro ? "/Auth/cadastro" : "/Auth/login", { method: "POST", body: JSON.stringify(dados) });
+            const usuario = await api(modoCadastro ? "/Auth/cadastro" : "/Auth/login", { method: "POST", body: JSON.stringify(dados) });
             localStorage.setItem(SESSION_KEY, JSON.stringify(usuario));
-            msg.textContent = cadastro ? "Conta criada com sucesso!" : "Login realizado!";
-            render(); atualizarNavegacao();
-            setTimeout(() => location.href = "../index.html", 500);
-        } catch (err) { msg.textContent = err.message || "Não foi possível entrar."; }
+            avisar(modoCadastro ? "Conta criada! Bem-vindo(a) ao Resenhário." : `Bem-vindo(a) de volta, ${usuario.nome.split(" ")[0]}!`);
+            setTimeout(() => location.href = "/index.html", 700);
+        } catch (err) {
+            avisar(err.message || "Não foi possível entrar.", "erro");
+            botao.disabled = false;
+        }
     });
 }
 
-async function configurarEstante() {
-    const area = document.getElementById("itens-estante"), msg = document.getElementById("mensagem-estante");
-    if (!area || !msg) return;
-    if (!usuarioAtual()?.token) { msg.textContent = "Entre na sua conta para visualizar sua estante."; return; }
-    msg.textContent = "Carregando sua estante...";
+// ---------------------------------------------------------------------
+// Minha estante: itens do usuário, status de leitura e estatísticas
+// ---------------------------------------------------------------------
+const STATUS_LIVRO = ["Quero ler", "Lendo", "Lido", "Abandonado"];
+const STATUS_FILME = ["Quero ver", "Assistindo", "Assistido"];
+
+async function iniciarEstante() {
+    const area = document.getElementById("itens-estante");
+    if (!area) return;
+    if (!usuarioAtual()?.token) {
+        document.getElementById("painel-estatisticas").hidden = true;
+        mostrarEstadoVazio(area, { icone: "🔒", titulo: "Entre para ver sua estante", texto: "Sua estante guarda o que você quer ler, está lendo e já leu.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
+        return;
+    }
+    mostrarSkeleton(area, 8);
     try {
-        const itens = await api("/Estante"); area.replaceChildren();
+        const itens = await api("/Estante");
         renderizarEstatisticasLeitura(itens);
-        if (!itens.length) { msg.textContent = "Sua estante está vazia. Pesquise livros ou filmes e adicione o que quiser guardar."; return; }
-        msg.textContent = "";
-        itens.forEach(item => {
-            const card = criarCard({ titulo: item.titulo, autor: item.autor, descricao: item.tipo });
-            const info = card.querySelector(".card-info"), select = document.createElement("select");
-            const statuses = item.tipo === "Livro" ? ["Quero ler", "Lendo", "Lido", "Abandonado"] : ["Quero ver", "Assistindo", "Assistido"];
-            statuses.forEach(status => {
-                const option = document.createElement("option"); option.value = status; option.textContent = status; option.selected = status === item.status; select.appendChild(option);
-            });
-            select.setAttribute("aria-label", `Status de ${item.titulo}`);
-            select.addEventListener("change", async () => {
-                select.disabled = true;
-                const statusAnterior = item.status;
-                try {
-                    await api(`/Estante/${item.idEstante}`, { method: "PUT", body: JSON.stringify({ status: select.value }) });
-                    item.status = select.value;
-                    renderizarEstatisticasLeitura(itens);
-                } catch (err) {
-                    select.value = statusAnterior;
-                    msg.textContent = `Não foi possível atualizar: ${err.message}`;
-                } finally { select.disabled = false; }
-            });
-            const remover = document.createElement("button"); remover.textContent = "Remover";
-            remover.addEventListener("click", async () => {
-                if (!confirm("Remover este item da sua estante?")) return;
-                remover.disabled = true;
-                try {
-                    await api(`/Estante/${item.idEstante}`, { method: "DELETE" }); card.remove();
-                    if (!area.children.length) msg.textContent = "Sua estante está vazia.";
-                } catch (err) { remover.disabled = false; msg.textContent = `Não foi possível remover: ${err.message}`; }
-            });
-            info.append(select, remover); area.appendChild(card);
-        });
-    } catch (e) { msg.textContent = `Não foi possível carregar sua estante: ${e.message}`; }
+        if (!itens.length) {
+            mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            return;
+        }
+        area.replaceChildren(...itens.map(item => cardEstante(item, itens, area)));
+    } catch (e) {
+        mostrarEstadoVazio(area, { erro: true, titulo: "Não foi possível carregar sua estante", texto: e.message });
+    }
 }
 
+function cardEstante(item, itens, area) {
+    const card = criarCardObra({ titulo: item.titulo, subtitulo: item.autor, imagem: item.imagem, tipo: item.tipo === "Livro" ? "Livro" : "Filme" });
+    card.dataset.status = item.status;
+    const acoes = card.querySelector(".card-obra-acoes");
+
+    const select = el("select", "select-status");
+    select.setAttribute("aria-label", `Status de ${item.titulo}`);
+    (item.tipo === "Livro" ? STATUS_LIVRO : STATUS_FILME).forEach(status => select.appendChild(new Option(status, status, false, status === item.status)));
+    select.addEventListener("change", async () => {
+        const anterior = item.status;
+        select.disabled = true;
+        try {
+            await api(`/Estante/${item.idEstante}`, { method: "PUT", body: JSON.stringify({ status: select.value }) });
+            item.status = select.value;
+            item.dataAtualizacao = new Date().toISOString();
+            card.dataset.status = item.status;
+            renderizarEstatisticasLeitura(itens);
+            avisar(`“${item.titulo}” agora está em “${item.status}”.`);
+        } catch (err) {
+            select.value = anterior;
+            avisar(err.message, "erro");
+        } finally { select.disabled = false; }
+    });
+
+    const remover = el("button", "botao botao-fantasma botao-pequeno", "Remover");
+    remover.type = "button";
+    remover.addEventListener("click", async () => {
+        if (!confirm(`Remover “${item.titulo}” da sua estante?`)) return;
+        remover.disabled = true;
+        try {
+            await api(`/Estante/${item.idEstante}`, { method: "DELETE" });
+            itens.splice(itens.indexOf(item), 1);
+            card.remove();
+            renderizarEstatisticasLeitura(itens);
+            avisar("Item removido da estante.");
+            if (!itens.length) mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros do catálogo.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+        } catch (err) { remover.disabled = false; avisar(err.message, "erro"); }
+    });
+    acoes.append(select, remover);
+    return card;
+}
 
 function renderizarEstatisticasLeitura(itens) {
     const area = document.getElementById("estatisticas-leitura");
     if (!area) return;
     const livros = itens.filter(item => item.tipo === "Livro");
-    const estatisticas = [
-        ["Itens na estante", itens.length],
-        ["Livros lidos", livros.filter(item => item.status === "Lido").length],
-        ["Em leitura", livros.filter(item => item.status === "Lendo").length],
-        ["Quero ler", livros.filter(item => item.status === "Quero ler").length],
-        ["Abandonados", livros.filter(item => item.status === "Abandonado").length]
-    ];
-    area.replaceChildren();
-    estatisticas.forEach(([rotulo, valor]) => {
-        const card = document.createElement("article"); card.className = "estatistica-card";
-        const numero = document.createElement("strong"); numero.textContent = String(valor);
-        const texto = document.createElement("span"); texto.textContent = rotulo;
-        card.append(numero, texto); area.appendChild(card);
-    });
+    const contar = status => livros.filter(item => item.status === status).length;
+    const numeros = [["📚", "Na estante", itens.length], ["✅", "Lidos", contar("Lido")], ["📖", "Lendo", contar("Lendo")],
+        ["🔖", "Quero ler", contar("Quero ler")], ["💤", "Abandonados", contar("Abandonado")]];
+    area.replaceChildren(...numeros.map(([icone, rotulo, valor]) => {
+        const card = el("article", "estatistica");
+        card.append(el("span", "estatistica-icone", icone), el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
+        return card;
+    }));
 }
 
-async function configurarReviews() {
-    const form = document.getElementById("form-review"), lista = document.getElementById("lista-reviews"), msg = document.getElementById("mensagem-reviews");
-    if (!lista) return;
-    const render = async () => {
-        try {
-            const reviews = await api("/Review"); lista.replaceChildren();
-            if (!reviews.length) { lista.textContent = "Ainda não há resenhas. Seja a primeira pessoa a compartilhar sua opinião."; return; }
-            reviews.forEach(review => {
-                const card = document.createElement("article"); card.className = "review-card";
-                const titulo = document.createElement("h3"); titulo.textContent = review.titulo || "Obra sem título";
-                const nota = document.createElement("p"); nota.textContent = `Qualidade do livro: ${review.notaLivro ?? "—"}/5 estrelas`;
-                const comentario = document.createElement("p"); comentario.textContent = review.comentario || "";
-                const autor = document.createElement("small");
-                autor.textContent = `Por ${review.nomeUsuario || "Usuário"} · ${new Date(review.dataCriacao).toLocaleDateString("pt-BR")}`;
-                card.append(titulo, nota);
-                if (review.tituloFilme && review.notaFidelidade != null) {
-                    const fidelidade = document.createElement("p"); fidelidade.textContent = `Fidelidade de “${review.tituloFilme}”: ${review.notaFidelidade}/5 estrelas`;
-                    card.appendChild(fidelidade);
-                }
-                card.append(comentario, autor); lista.appendChild(card);
-            });
-        } catch (e) { lista.textContent = `Não foi possível carregar as resenhas: ${e.message}`; console.error(e); }
-    };
-
-    if (form) {
-        const livroSelect = document.getElementById("review-livro");
-        const adaptacaoSelect = document.getElementById("review-adaptacao");
-        const notaFidelidade = document.getElementById("review-nota-fidelidade");
-        try {
-            const livros = await api("/Livro"); livroSelect.replaceChildren();
-            const placeholder = new Option("Selecione um livro", ""); placeholder.disabled = true; placeholder.selected = true; livroSelect.appendChild(placeholder);
-            livros.forEach(livro => livroSelect.appendChild(new Option(livro.titulo, livro.idLivros)));
-            await carregarOpcoesAdaptacoes();
-        } catch (e) { if (msg) msg.textContent = `Não foi possível carregar o formulário: ${e.message}`; }
-        livroSelect?.addEventListener("change", () => atualizarAdaptacoesDoLivro());
-        adaptacaoSelect?.addEventListener("change", () => { if (notaFidelidade) notaFidelidade.disabled = !adaptacaoSelect.value; });
-        form.addEventListener("submit", async e => {
-            e.preventDefault();
-            if (!exigirLogin()) return;
-            const idLivro = Number(livroSelect.value), idAdaptacao = Number(adaptacaoSelect?.value || 0);
-            const notaLivro = Number(document.getElementById("review-nota").value);
-            const comentario = document.getElementById("review-comentario").value.trim();
-            const nota = idAdaptacao ? Number(notaFidelidade.value) : null;
-            if (!idLivro) { msg.textContent = "Selecione um livro."; return; }
-            if (idAdaptacao && (!nota || nota < 1 || nota > 5)) { msg.textContent = "Informe a fidelidade da adaptação de 1 a 5 estrelas."; return; }
-            try {
-                await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario, notaFidelidade: nota, assistiuFilme: !!idAdaptacao }) });
-                form.reset(); if (notaFidelidade) notaFidelidade.disabled = true;
-                if (msg) msg.textContent = "Resenha publicada!";
-                await render(); await carregarRankingAdaptacoes();
-            } catch (err) { if (msg) msg.textContent = `Não foi possível publicar: ${err.message}`; }
-        });
-    }
-    await render();
-}
-
+// ---------------------------------------------------------------------
+// Publicar resenha (avaliação dupla: obra + fidelidade da adaptação)
+// ---------------------------------------------------------------------
 let adaptacoesCache = [];
-async function carregarOpcoesAdaptacoes() {
-    try { adaptacoesCache = await api("/Adaptacao"); }
-    catch (e) { adaptacoesCache = []; console.warn("Não foi possível carregar adaptações", e); }
-    atualizarAdaptacoesDoLivro();
-}
 
-function atualizarAdaptacoesDoLivro() {
-    const livroSelect = document.getElementById("review-livro"), adaptacaoSelect = document.getElementById("review-adaptacao");
-    const notaFidelidade = document.getElementById("review-nota-fidelidade");
-    if (!livroSelect || !adaptacaoSelect) return;
-    const idLivro = Number(livroSelect.value || 0);
-    adaptacaoSelect.replaceChildren(new Option("Não avaliar uma adaptação", ""));
-    adaptacoesCache.filter(a => a.idLivro === idLivro).forEach(a => adaptacaoSelect.appendChild(new Option(`${a.tituloFilme} (adaptação do livro)`, a.idAdaptacoes)));
-    if (notaFidelidade) { notaFidelidade.disabled = !adaptacaoSelect.value; if (!adaptacaoSelect.value) notaFidelidade.value = ""; }
-}
+async function iniciarResenhas() {
+    const form = document.getElementById("form-review");
+    if (!form) return;
+    const livroSelect = document.getElementById("review-livro");
+    const adaptacaoSelect = document.getElementById("review-adaptacao");
+    const campoFidelidade = document.getElementById("campo-fidelidade");
 
-async function configurarAdaptacoes() {
-    const form = document.getElementById("form-vincular-adaptacao");
-    const msg = document.getElementById("mensagem-adaptacoes"), lista = document.getElementById("lista-adaptacoes");
-    if (!form || !msg || !lista) return;
-    const livroSelect = document.getElementById("adaptacao-livro"), filmeSelect = document.getElementById("adaptacao-filme");
-    const render = async () => {
-        try {
-            const [livros, filmes, adaptacoes] = await Promise.all([api("/Livro"), api("/Filme"), api("/Adaptacao")]);
-            adaptacoesCache = adaptacoes;
-            preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
-            preencherSelect(filmeSelect, filmes, "idFilme", "titulo", "Selecione um filme");
-            lista.replaceChildren();
-            if (!adaptacoes.length) { lista.textContent = "Ainda não há adaptações vinculadas."; return; }
-            adaptacoes.forEach(a => {
-                const card = document.createElement("article"); card.className = "review-card";
-                const p = document.createElement("p"); p.textContent = `${a.tituloLivro} → ${a.tituloFilme}`; card.appendChild(p); lista.appendChild(card);
-            });
-        } catch (e) { msg.textContent = `Não foi possível carregar os dados: ${e.message}`; }
+    try {
+        const [livros, adaptacoes] = await Promise.all([api("/Livro"), api("/Adaptacao")]);
+        adaptacoesCache = adaptacoes;
+        preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
+    } catch (e) { avisar(`Não foi possível carregar o formulário: ${e.message}`, "erro"); }
+
+    const atualizarAdaptacoes = () => {
+        const idLivro = Number(livroSelect.value || 0);
+        adaptacaoSelect.replaceChildren(new Option("Não vi nenhuma adaptação", ""),
+            ...adaptacoesCache.filter(a => a.idLivro === idLivro).map(a => new Option(a.tituloFilme, a.idAdaptacoes)));
+        campoFidelidade.hidden = true;
     };
+    livroSelect.addEventListener("change", atualizarAdaptacoes);
+    adaptacaoSelect.addEventListener("change", () => campoFidelidade.hidden = !adaptacaoSelect.value);
+
     form.addEventListener("submit", async e => {
         e.preventDefault();
         if (!exigirLogin()) return;
-        msg.textContent = "Vinculando adaptação...";
+        const idLivro = Number(livroSelect.value), idAdaptacao = Number(adaptacaoSelect.value || 0);
+        const notaLivro = Number(document.getElementById("review-nota").value);
+        const notaFidelidade = idAdaptacao ? Number(document.getElementById("review-nota-fidelidade").value) : null;
+        const comentario = document.getElementById("review-comentario").value.trim();
+        if (!idLivro) { avisar("Selecione um livro.", "erro"); return; }
+        if (idAdaptacao && !(notaFidelidade >= 1 && notaFidelidade <= 5)) { avisar("Dê uma nota de 1 a 5 para a fidelidade do filme.", "erro"); return; }
         try {
-            await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro: Number(livroSelect.value), idFilme: Number(filmeSelect.value) }) });
-            msg.textContent = "Adaptação vinculada com sucesso."; await render(); await carregarOpcoesAdaptacoes();
-        } catch (err) { msg.textContent = `Não foi possível vincular: ${err.message}`; }
+            await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario, notaFidelidade, assistiuFilme: !!idAdaptacao }) });
+            form.reset(); atualizarAdaptacoes();
+            avisar("Resenha publicada! Ela já aparece no feed.");
+            await carregarUltimasResenhas();
+        } catch (err) { avisar(err.message, "erro"); }
     });
-    await render();
+    await carregarUltimasResenhas();
 }
 
-function preencherSelect(select, itens, idCampo, textoCampo, placeholder) {
-    if (!select) return;
-    select.replaceChildren();
-    const opcao = new Option(placeholder, ""); opcao.disabled = true; opcao.selected = true; select.appendChild(opcao);
-    itens.forEach(item => select.appendChild(new Option(item[textoCampo], item[idCampo])));
-}
-
-// Formata uma média (ex.: 4.333 -> "4,3"); sem avaliações mostra "—".
-function formatarMedia(valor) {
-    return valor == null ? "—" : Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-}
-
-// Avaliação dupla do ranking: fidelidade do filme × nota (aceitação) do livro.
-function textoMediasRanking(item) {
-    return `Fidelidade do filme: ${formatarMedia(item.mediaFidelidade)}/5 (${item.totalAvaliacoes} avaliação(ões)) · ` +
-        `Nota do livro: ${formatarMedia(item.mediaNotaLivro)}/5 (${item.totalResenhasLivro} resenha(s))`;
-}
-
-async function carregarRankingAdaptacoes() {
-    const lista = document.getElementById("ranking-adaptacoes"), msg = document.getElementById("mensagem-ranking");
+async function carregarUltimasResenhas() {
+    const lista = document.getElementById("ultimas-resenhas");
     if (!lista) return;
+    await carregarResenhasEm(lista, 1, 4);
+}
+
+// ---------------------------------------------------------------------
+// Feed da comunidade
+// ---------------------------------------------------------------------
+async function carregarResenhasEm(lista, pagina, tamanho, acrescentar = false) {
+    if (!acrescentar) mostrarSkeleton(lista, Math.min(tamanho, 4), "resenha");
     try {
-        const ranking = await api("/Adaptacao/ranking"); lista.replaceChildren();
-        if (!ranking.length) { if (msg) msg.textContent = "O ranking aparecerá quando houver avaliações de fidelidade."; return; }
-        if (msg) msg.textContent = "Médias calculadas a partir das avaliações da comunidade.";
-        ranking.forEach((item, index) => {
-            const card = document.createElement("article"); card.className = "review-card";
-            const titulo = document.createElement("h3"); titulo.textContent = `${index + 1}. ${item.tituloLivro} → ${item.tituloFilme}`;
-            const media = document.createElement("p"); media.textContent = textoMediasRanking(item);
-            card.append(titulo, media); lista.appendChild(card);
-        });
-    } catch (e) { if (msg) msg.textContent = `Não foi possível carregar o ranking: ${e.message}`; }
-}
-
-document.addEventListener("DOMContentLoaded", carregarRankingAdaptacoes);
-
-
-async function configurarFeedSocial() {
-    const lista = document.getElementById("feed-resenhas");
-    const msg = document.getElementById("mensagem-feed");
-    const anterior = document.getElementById("feed-anterior");
-    const proxima = document.getElementById("feed-proxima");
-    const paginaAtual = document.getElementById("feed-pagina");
-    if (!lista) return;
-    let pagina = 1, totalPaginas = 1;
-    async function carregar() {
-        lista.replaceChildren();
-        if (msg) msg.textContent = "Carregando resenhas da comunidade...";
-        try {
-            const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=10`);
-            totalPaginas = Math.max(1, dados.totalPaginas || 1);
-            if (!dados.itens?.length) { if (msg) msg.textContent = "Ainda não há resenhas publicadas."; }
-            else {
-                if (msg) msg.textContent = `${dados.total} resenha(s) publicada(s).`;
-                dados.itens.forEach(review => {
-                    const card = document.createElement("article"); card.className = "review-card";
-                    const titulo = document.createElement("h3"); titulo.textContent = review.titulo || "Obra sem título";
-                    const nota = document.createElement("p"); nota.textContent = `Qualidade literária: ${review.notaLivro ?? "—"}/5 estrelas`;
-                    const comentario = document.createElement("p"); comentario.textContent = review.comentario || "";
-                    const autor = document.createElement("small"); autor.textContent = `Por ${review.nomeUsuario || "Usuário"} · ${new Date(review.dataCriacao).toLocaleDateString("pt-BR")}`;
-                    card.append(titulo, nota);
-                    if (review.tituloFilme && review.notaFidelidade != null) { const fidelidade = document.createElement("p"); fidelidade.textContent = `Fidelidade de “${review.tituloFilme}”: ${review.notaFidelidade}/5 estrelas`; card.appendChild(fidelidade); }
-                    card.append(comentario, autor); lista.appendChild(card);
-                });
-            }
-            if (paginaAtual) paginaAtual.textContent = `Página ${pagina} de ${totalPaginas}`;
-            if (anterior) anterior.disabled = pagina <= 1;
-            if (proxima) proxima.disabled = pagina >= totalPaginas;
-        } catch (e) { if (msg) msg.textContent = `Não foi possível carregar o feed: ${e.message}`; }
+        const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=${tamanho}`);
+        if (!dados.itens.length && !acrescentar) {
+            mostrarEstadoVazio(lista, { icone: "✍️", titulo: "Ainda não há resenhas", texto: "Seja a primeira pessoa a comparar um livro com o filme.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            return dados;
+        }
+        const cards = dados.itens.map(cardResenha);
+        if (acrescentar) lista.append(...cards); else lista.replaceChildren(...cards);
+        return dados;
+    } catch (e) {
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar o feed", texto: e.message });
+        return null;
     }
-    anterior?.addEventListener("click", async () => { if (pagina > 1) { pagina--; await carregar(); } });
-    proxima?.addEventListener("click", async () => { if (pagina < totalPaginas) { pagina++; await carregar(); } });
-    await carregar();
 }
 
-async function configurarPaginaRanking() {
-    const lista = document.getElementById("pagina-ranking-adaptacoes");
-    const msg = document.getElementById("mensagem-pagina-ranking");
+function cardResenha(review) {
+    const card = el("article", "card-resenha");
+    card.append(el("h3", "", review.titulo || "Obra"), criarEstrelas(review.notaLivro));
+    if (review.tituloFilme && review.notaFidelidade != null)
+        card.append(el("p", "", `Fidelidade de “${review.tituloFilme}”: ${review.notaFidelidade}/5`));
+    card.append(el("p", "", review.comentario || ""), el("small", "", `${review.nomeUsuario} · ${dataRelativa(review.dataCriacao)}`));
+    return card;
+}
+
+async function iniciarFeed() {
+    const lista = document.getElementById("feed-resenhas");
     if (!lista) return;
-    try {
-        const ranking = await api("/Adaptacao/ranking"); lista.replaceChildren();
-        if (!ranking.length) { msg.textContent = "O ranking será exibido quando houver avaliações de fidelidade."; return; }
-        msg.textContent = "Classificação calculada pelas avaliações da comunidade.";
-        ranking.forEach((item, index) => {
-            const card = document.createElement("article"); card.className = "review-card";
-            const titulo = document.createElement("h3"); titulo.textContent = `${index + 1}. ${item.tituloLivro} → ${item.tituloFilme}`;
-            const media = document.createElement("p"); media.textContent = textoMediasRanking(item);
-            card.append(titulo, media); lista.appendChild(card);
-        });
-    } catch (e) { msg.textContent = `Não foi possível carregar o ranking: ${e.message}`; }
+    const botaoMais = document.getElementById("feed-mais");
+    let pagina = 1;
+    const dados = await carregarResenhasEm(lista, pagina, 10);
+    botaoMais.hidden = !dados || dados.totalPaginas <= 1;
+    botaoMais.addEventListener("click", async () => {
+        botaoMais.disabled = true;
+        const proxima = await carregarResenhasEm(lista, ++pagina, 10, true);
+        botaoMais.disabled = false;
+        botaoMais.hidden = !proxima || pagina >= proxima.totalPaginas;
+    });
 }
 
-document.addEventListener("DOMContentLoaded", () => { configurarFeedSocial(); configurarPaginaRanking(); });
+// ---------------------------------------------------------------------
+// Ranking de adaptações
+// ---------------------------------------------------------------------
+async function iniciarRanking() {
+    const lista = document.getElementById("ranking-lista");
+    if (!lista) return;
+    mostrarSkeleton(lista, 4, "resenha");
+    try {
+        const ranking = await api("/Adaptacao/ranking");
+        if (!ranking.length) {
+            mostrarEstadoVazio(lista, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Ele aparece quando houver notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            return;
+        }
+        lista.replaceChildren(...ranking.map((item, i) => el("p", "linha-adaptacao",
+            `${i + 1}. ${item.tituloLivro} → ${item.tituloFilme}: fidelidade ${formatarMedia(item.mediaFidelidade)} · livro ${formatarMedia(item.mediaNotaLivro)}`)));
+    } catch (e) {
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar o ranking", texto: e.message });
+    }
+}

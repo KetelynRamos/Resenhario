@@ -1,0 +1,165 @@
+// =====================================================================
+// ui.js: componentes visuais reutilizáveis (cards, capas, avisos,
+// carregamento, estados vazios, estrelas, datas). Não fala com a API:
+// só recebe dados e devolve elementos HTML prontos.
+// =====================================================================
+
+// Cria um elemento com classe e texto em uma linha.
+// Usamos textContent (e não innerHTML) para o texto do usuário nunca virar HTML.
+function el(tag, classe = "", texto = "") {
+    const elemento = document.createElement(tag);
+    if (classe) elemento.className = classe;
+    if (texto !== "" && texto != null) elemento.textContent = texto;
+    return elemento;
+}
+
+// ----- Cabeçalho: menu do celular, link ativo e nome do usuário ------
+function configurarCabecalho() {
+    const botao = document.querySelector(".menu-botao");
+    const menu = document.getElementById("menu");
+    botao?.addEventListener("click", () => {
+        const aberto = menu.classList.toggle("aberto");
+        botao.setAttribute("aria-expanded", String(aberto));
+    });
+
+    // Destaca no menu a página atual.
+    const atual = location.pathname === "/" ? "/index.html" : location.pathname;
+    document.querySelectorAll("#menu a").forEach(link => {
+        if (new URL(link.href).pathname === atual) link.classList.add("ativo");
+    });
+
+    // Troca "Entrar" pelo primeiro nome de quem está logado.
+    const usuario = usuarioAtual();
+    const linkConta = document.querySelector("#menu .link-conta");
+    if (usuario && linkConta) linkConta.textContent = `Olá, ${usuario.nome.split(" ")[0]}`;
+}
+
+// ----- Avisos (toasts): substituem o alert() -----------------------
+function avisar(mensagem, tipo = "sucesso") {
+    let area = document.getElementById("avisos");
+    if (!area) {
+        area = el("div", "avisos");
+        area.id = "avisos";
+        area.setAttribute("aria-live", "polite");
+        document.body.appendChild(area);
+    }
+    const aviso = el("div", `aviso aviso-${tipo}`, mensagem);
+    area.appendChild(aviso);
+    setTimeout(() => aviso.classList.add("saindo"), 3200);
+    setTimeout(() => aviso.remove(), 3600);
+}
+
+// ----- Capas e pôsteres --------------------------------------------
+// Gera uma cor (matiz) a partir do título, para cada placeholder ter um tom diferente.
+function matizDoTexto(texto) {
+    let soma = 0;
+    for (const letra of texto || "") soma = (soma * 31 + letra.charCodeAt(0)) % 360;
+    return soma;
+}
+
+// Placeholder bonito quando a obra não tem imagem (ou a imagem falha).
+function criarPlaceholder(titulo, tipo) {
+    const div = el("div", `capa-placeholder capa-${tipo === "Filme" ? "filme" : "livro"}`);
+    div.style.setProperty("--matiz", matizDoTexto(titulo));
+    div.append(el("span", "capa-placeholder-tipo", tipo === "Filme" ? "🎬 Filme" : "📖 Livro"),
+        el("strong", "", titulo || "Sem título"));
+    return div;
+}
+
+// Imagem de capa/pôster com troca automática para o placeholder se der erro.
+function criarCapa(url, titulo, tipo = "Livro") {
+    if (!url) return criarPlaceholder(titulo, tipo);
+    const img = el("img", "capa-img");
+    img.src = url;
+    img.alt = `${tipo === "Filme" ? "Pôster" : "Capa"} de ${titulo}`;
+    img.loading = "lazy";
+    img.onerror = () => img.replaceWith(criarPlaceholder(titulo, tipo));
+    return img;
+}
+
+// Card de obra (livro ou filme) usado nas grades e carrosséis.
+// item: { titulo, subtitulo, detalhe, imagem, tipo, acoes: [{ texto, acao, secundario }] }
+function criarCardObra(item) {
+    const card = el("article", "card-obra");
+    const moldura = el("div", "card-obra-capa");
+    moldura.appendChild(criarCapa(item.imagem, item.titulo, item.tipo));
+    const info = el("div", "card-obra-info");
+    info.append(el("h3", "", item.titulo || "Sem título"));
+    if (item.subtitulo) info.append(el("p", "card-obra-sub", item.subtitulo));
+    if (item.detalhe) info.append(el("p", "card-obra-detalhe", item.detalhe));
+    const acoes = el("div", "card-obra-acoes");
+    (item.acoes || []).forEach(a => {
+        const botao = el("button", a.secundario ? "botao botao-fantasma botao-pequeno" : "botao botao-pequeno", a.texto);
+        botao.type = "button";
+        botao.addEventListener("click", () => a.acao(botao));
+        acoes.appendChild(botao);
+    });
+    info.appendChild(acoes);
+    card.append(moldura, info);
+    return card;
+}
+
+// ----- Carregamento (skeleton) e estados vazios ---------------------
+// Mostra cards "fantasmas" piscando enquanto os dados chegam.
+function mostrarSkeleton(container, quantidade = 6, formato = "obra") {
+    container.replaceChildren();
+    for (let i = 0; i < quantidade; i++) {
+        const card = el("div", `skeleton skeleton-${formato}`);
+        card.setAttribute("aria-hidden", "true");
+        container.appendChild(card);
+    }
+}
+
+// Mensagem amigável para listas vazias ou erros.
+// opcoes: { icone, titulo, texto, botao: { texto, href } , erro }
+function mostrarEstadoVazio(container, opcoes) {
+    const caixa = el("div", `estado-vazio${opcoes.erro ? " estado-erro" : ""}`);
+    caixa.append(el("span", "estado-vazio-icone", opcoes.icone || (opcoes.erro ? "⚠️" : "🎞️")),
+        el("h3", "", opcoes.titulo), el("p", "", opcoes.texto || ""));
+    if (opcoes.botao) {
+        const link = el("a", "botao", opcoes.botao.texto);
+        link.href = opcoes.botao.href;
+        caixa.appendChild(link);
+    }
+    container.replaceChildren(caixa);
+}
+
+// ----- Notas, estrelas e datas --------------------------------------
+// Formata uma média (ex.: 4.333 -> "4,3"); sem avaliações mostra "—".
+function formatarMedia(valor) {
+    return valor == null ? "—" : Number(valor).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+// Estrelas só para exibir (ex.: 4 -> ★★★★☆), com texto para leitores de tela.
+function criarEstrelas(nota, classe = "") {
+    const n = Math.round(Number(nota) || 0);
+    const span = el("span", `estrelas ${classe}`.trim(), "★".repeat(n) + "☆".repeat(5 - n));
+    span.setAttribute("role", "img");
+    span.setAttribute("aria-label", `${n} de 5 estrelas`);
+    return span;
+}
+
+// "há 2 horas", "há 3 dias"... usando o formatador nativo do navegador.
+function dataRelativa(dataIso) {
+    // A API devolve datas em UTC sem o "Z" no final; adicionamos para o navegador entender.
+    const data = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(dataIso) ? dataIso : dataIso + "Z");
+    const segundos = Math.round((data - new Date()) / 1000);
+    const formatador = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
+    const unidades = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]];
+    for (const [unidade, tamanho] of unidades) {
+        if (Math.abs(segundos) >= tamanho) return formatador.format(Math.round(segundos / tamanho), unidade);
+    }
+    return "agora mesmo";
+}
+
+// Avatar com as iniciais do nome e uma cor própria para cada pessoa.
+function criarAvatar(nome) {
+    const partes = (nome || "?").trim().split(/\s+/);
+    const iniciais = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+    const avatar = el("span", "avatar", iniciais);
+    avatar.style.setProperty("--matiz", matizDoTexto(nome));
+    avatar.setAttribute("aria-hidden", "true");
+    return avatar;
+}
+
+document.addEventListener("DOMContentLoaded", configurarCabecalho);
