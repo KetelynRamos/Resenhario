@@ -109,6 +109,19 @@ public async Task<IActionResult> CriarLivro(Livro livro)
             return NotFound();
         }
 
+        // Um livro com adaptações, resenhas ou em estantes não pode ser apagado
+        // (as chaves estrangeiras do banco impediriam e a API daria erro 500).
+        bool temVinculos = _context.Adaptacoes.Any(a => a.IdLivro == id)
+            || _context.Reviews.Any(r => r.IdLivro == id)
+            || _context.Estantes.Any(e => e.IdLivros == id);
+        if (temVinculos)
+        {
+            return Conflict(new
+            {
+                mensagem = "Este livro tem adaptações, resenhas ou está em estantes e não pode ser excluído."
+            });
+        }
+
         _context.Livros.Remove(livro);
         _context.SaveChanges();
 

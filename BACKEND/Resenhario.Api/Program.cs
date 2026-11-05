@@ -53,6 +53,18 @@ builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
 builder.Services.AddOpenApi();
 var app = builder.Build();
 
+// Tratamento global de erros: qualquer exceção não tratada vira uma resposta
+// 500 em JSON com mensagem amigável, sem expor o stack trace ao navegador.
+// (O detalhe do erro continua aparecendo no log do terminal.)
+app.UseExceptionHandler(erro => erro.Run(async context =>
+{
+    context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+    await context.Response.WriteAsJsonAsync(new
+    {
+        mensagem = "Ocorreu um erro inesperado no servidor. Tente novamente em instantes."
+    });
+}));
+
 if (app.Environment.IsDevelopment()) app.MapOpenApi();
 app.UseHttpsRedirection();
 
