@@ -1,6 +1,6 @@
 # Resenhário — guia de execução e testes
 
-O Resenhário é uma plataforma web acadêmica de catálogo literário social. Atenção ao alinhamento documental: o PDF de escopo apresenta o nome “LivreFlix”, enquanto o código e a interface utilizam “Resenhário”; a equipe deve padronizar o nome na documentação ou confirmar formalmente que houve mudança de nome. A versão atual preserva o frontend HTML/CSS/JavaScript, a API ASP.NET Core e o banco MySQL existentes, acrescentando autenticação JWT, hashing BCrypt, integração Google Books, pesquisa de filmes pelo TMDB, vínculo livro/filme, avaliações duplas, feed de resenhas e ranking de fidelidade.
+O Resenhário é uma plataforma web acadêmica de catálogo literário social. O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita “LivreFlix”, nome provisório que a equipe substituiu). A versão atual preserva o frontend HTML/CSS/JavaScript, a API ASP.NET Core e o banco MySQL existentes, acrescentando autenticação JWT, hashing BCrypt, integração Google Books, pesquisa de filmes pelo TMDB, vínculo livro/filme, avaliações duplas, feed de resenhas e ranking de fidelidade.
 
 ## Funcionalidades
 
