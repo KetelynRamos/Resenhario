@@ -25,30 +25,35 @@ O Resenhário é uma plataforma web acadêmica de catálogo literário social. O
 6. Não execute `02_dados_teste.sql` repetidamente sem revisar o conteúdo: ele pode inserir registros de demonstração duplicados.
 7. `06_limpar_resenhas_de_teste.sql` remove resenhas de teste; execute somente se tiver certeza de que deseja excluí-las.
 
-## 2. Configuração do backend
+## 2. Configuração do backend (segredos fora do Git)
 
-Abra `BACKEND/Resenhario.Api/appsettings.json` e substitua `COLOQUE_SUA_SENHA` pela senha local do MySQL. Não publique uma senha real no GitHub.
+Senhas e chaves **nunca** vão para o `appsettings.json` nem para o GitHub. Cada pessoa da equipe grava os valores na própria máquina com o **`dotnet user-secrets`**, que guarda tudo numa pasta do usuário (fora do projeto). O ASP.NET carrega esses valores automaticamente no ambiente `Development`.
 
-O projeto usa .NET 10 no arquivo atual, em concordância com o PDF do escopo, que também especifica C# com .NET 10. Portanto, não há necessidade de downgrade do framework.
+O arquivo `BACKEND/Resenhario.Api/appsettings.Example.json` mostra quais chaves existem. No terminal, dentro de `BACKEND/Resenhario.Api`:
+
+```powershell
+cd BACKEND/Resenhario.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "server=localhost;port=3306;database=resenhario_db;user=root;password=SUA_SENHA;"
+dotnet user-secrets set "Tmdb:ReadAccessToken" "SEU_READ_ACCESS_TOKEN_DO_TMDB"
+dotnet user-secrets set "GoogleBooks:ApiKey" "SUA_CHAVE_DO_GOOGLE_BOOKS"
+dotnet user-secrets list
+```
+
+- **Banco:** obrigatório. Sem ele, as páginas carregam, mas os dados não aparecem.
+- **TMDB:** obrigatório para pesquisar filmes. Crie em themoviedb.org → Configurações → API → *API Read Access Token*.
+- **Google Books:** opcional, mas **recomendado para a apresentação**: sem chave, a cota pública pode acabar (erro 429). Crie no Google Cloud Console com a *Books API* ativada.
+
+O token e as chaves ficam só no backend e nunca são enviados ao JavaScript.
 
 ### JWT
 
-O ambiente `Development` possui uma chave exclusivamente local em `appsettings.Development.json`. Ela não deve ser usada em produção. Fora do ambiente de desenvolvimento, configure uma chave forte por variável de ambiente `Jwt__Key` (mínimo de 32 bytes), além de configurar `Jwt__Issuer` e `Jwt__Audience` se necessário.
+O ambiente `Development` usa uma chave de desenvolvimento que está em `appsettings.Development.json`. Ela serve só para rodar localmente e não protege nada de verdade. Fora do Development, configure uma chave forte (mínimo de 32 caracteres) com `dotnet user-secrets set "Jwt:Key" "..."` ou com a variável de ambiente `Jwt__Key`.
 
-### TMDB
+### Alternativa: variáveis de ambiente
 
-O TMDB exige uma credencial de API. Para ativar a pesquisa de filmes, configure o token de leitura no terminal do PowerShell antes de iniciar a API:
+Também funciona com variáveis de ambiente (use `__` no lugar de `:`), por exemplo no PowerShell: `$env:Tmdb__ReadAccessToken = "..."`. Elas valem só para o terminal atual.
 
-```powershell
-$env:Tmdb__ReadAccessToken = "COLE_SEU_TOKEN_DE_LEITURA_DO_TMDB"
-cd BACKEND/Resenhario.Api
-dotnet restore
-dotnet run --launch-profile http
-```
-
-O token fica no backend e não é enviado ao JavaScript. Sem essa configuração, a API retorna uma mensagem explicando que a integração precisa ser configurada. A pesquisa Google Books e TVmaze não exige chave no frontend atual.
-
-A string de conexão permanece local em `appsettings.json` para facilitar a execução acadêmica. Antes de hospedar o sistema publicamente, mova-a para uma variável de ambiente e configure segredos de produção.
+O projeto usa .NET 10, como especifica o PDF do escopo.
 
 ## 3. Executar o sistema
 
