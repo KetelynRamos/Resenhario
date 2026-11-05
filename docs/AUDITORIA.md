@@ -188,3 +188,30 @@
 | D4 | Front dentro da API (`wwwroot/`) | ✅ `UseStaticFiles` + `API_URL = "/api"` (commit `3b7f854`) |
 | D5 | Banco na nuvem | ⏳ Proposta enviada; aguardando OK da equipe |
 | D6 | Manter scripts SQL | ✅ Mudanças de esquema novas serão scripts não destrutivos `09_...` |
+
+---
+
+## e) Situação do plano (atualizado em 05/11/2026)
+
+| Item | Situação | Commit |
+|---|---|---|
+| Reorganização das pastas (Controllers, Models, Data, wwwroot) | ✅ | `9773253` |
+| D4: front servido pela API em `wwwroot/` | ✅ | `3b7f854` |
+| D3: Séries fora do menu | ✅ | `b7f0dc4` |
+| P0-1: erro 500 na estante | ✅ | `b36f56d` |
+| P0-2: login obrigatório para alterar o catálogo | ✅ | `733d140` |
+| P0-3: tratamento global de erros e 409 ao excluir livro com vínculos | ✅ | `4e46835` |
+| P0-4: Data Annotations | ✅ | `9154612` |
+| P0-5: Swagger UI com Authorize | ✅ | `881f88e` |
+| P0-6: média de aceitação (nota do livro + fidelidade) | ✅ | `1ba1e65` |
+| P0-7: segredos via user-secrets e `appsettings.Example.json` | ✅ | `5f03e63` |
+| P0-8: (= D4) | ✅ | `3b7f854` |
+| P0-9: seed idempotente (Fase 4) | ✅ (imagens: rodar uma vez com internet e chaves) | `0a0791d` |
+| P0-10: banco na nuvem (Aiven) | ⏳ **Ação da equipe**: passo a passo no `LEIA-ME.md`, seção 2. Conferir com `/api/saude` | `ae20073`, `c3014e6` |
+| P1-1 a P1-8 e P1-10: visual (Fase 5) | ✅ | `a3ae175` … `df24bc3` |
+| P1-9: TMDB mais rápido (diretor só ao salvar) | ❌ Pendente | — |
+| Ranking com mínimo de 2 avaliações e desempate | ✅ | `b5f7321` |
+| Roteiro da demo (Fase 6) | ✅ `docs/ROTEIRO_DEMO.md` | `cfb7352` |
+| P2-1 a P2-9: qualidade de código e documentação (Fase 7) | ⏳ Pendente | — |
+
+Riscos resolvidos: R1, R3 (seed), R6, R7, R8, R9 (documentado), R10, R11, R12, R14. Em aberto: **R2** (banco na nuvem, ação da equipe), **R4/R5** (configurar as chaves do Google Books e do TMDB), R13 (os scripts SQL continuam sem `SET NAMES utf8mb4`; no Workbench isso não costuma causar problema).
