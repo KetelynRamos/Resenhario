@@ -35,20 +35,35 @@ public class AdaptacaoController : ControllerBase
     }
 
 
+    // Ranking das adaptações com a "avaliação dupla" da comunidade:
+    // - MediaFidelidade: média das notas de fidelidade dadas a ESTA adaptação;
+    // - MediaNotaLivro: média das notas de qualidade dadas ao LIVRO (média de aceitação da obra).
     [HttpGet("ranking")]
     public async Task<IActionResult> Ranking()
     {
-        var ranking = await _context.Adaptacoes.Select(a => new
-        {
-            a.IdAdaptacoes,
-            a.IdLivro,
-            a.IdFilme,
-            TituloLivro = _context.Livros.Where(l => l.IdLivros == a.IdLivro).Select(l => l.Titulo).FirstOrDefault(),
-            TituloFilme = _context.Filmes.Where(f => f.IdFilme == a.IdFilme).Select(f => f.Titulo).FirstOrDefault(),
-            MediaFidelidade = _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-                .Select(r => (double?)r.NotaFidelidade).Average(),
-            TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-        })
+        var ranking = await (
+            from a in _context.Adaptacoes
+            join l in _context.Livros on a.IdLivro equals l.IdLivros
+            join f in _context.Filmes on a.IdFilme equals f.IdFilme
+            select new
+            {
+                a.IdAdaptacoes,
+                a.IdLivro,
+                a.IdFilme,
+                TituloLivro = l.Titulo,
+                AutorLivro = l.Autor,
+                l.CapaUrl,
+                TituloFilme = f.Titulo,
+                f.Diretor,
+                f.AnoLancamento,
+                f.PosterUrl,
+                MediaFidelidade = _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
+                    .Select(r => (double?)r.NotaFidelidade).Average(),
+                TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null),
+                MediaNotaLivro = _context.Reviews.Where(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
+                    .Select(r => (double?)r.NotaLivro).Average(),
+                TotalResenhasLivro = _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
+            })
         .Where(x => x.TotalAvaliacoes > 0)
         .OrderByDescending(x => x.MediaFidelidade)
         .ThenByDescending(x => x.TotalAvaliacoes)

@@ -519,6 +519,17 @@ function preencherSelect(select, itens, idCampo, textoCampo, placeholder) {
     itens.forEach(item => select.appendChild(new Option(item[textoCampo], item[idCampo])));
 }
 
+// Formata uma média (ex.: 4.333 -> "4,3"); sem avaliações mostra "—".
+function formatarMedia(valor) {
+    return valor == null ? "—" : Number(valor).toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+}
+
+// Avaliação dupla do ranking: fidelidade do filme × nota (aceitação) do livro.
+function textoMediasRanking(item) {
+    return `Fidelidade do filme: ${formatarMedia(item.mediaFidelidade)}/5 (${item.totalAvaliacoes} avaliação(ões)) · ` +
+        `Nota do livro: ${formatarMedia(item.mediaNotaLivro)}/5 (${item.totalResenhasLivro} resenha(s))`;
+}
+
 async function carregarRankingAdaptacoes() {
     const lista = document.getElementById("ranking-adaptacoes"), msg = document.getElementById("mensagem-ranking");
     if (!lista) return;
@@ -529,7 +540,7 @@ async function carregarRankingAdaptacoes() {
         ranking.forEach((item, index) => {
             const card = document.createElement("article"); card.className = "review-card";
             const titulo = document.createElement("h3"); titulo.textContent = `${index + 1}. ${item.tituloLivro} → ${item.tituloFilme}`;
-            const media = document.createElement("p"); media.textContent = `Fidelidade média: ${Number(item.mediaFidelidade).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}/5 · ${item.totalAvaliacoes} avaliação(ões)`;
+            const media = document.createElement("p"); media.textContent = textoMediasRanking(item);
             card.append(titulo, media); lista.appendChild(card);
         });
     } catch (e) { if (msg) msg.textContent = `Não foi possível carregar o ranking: ${e.message}`; }
@@ -587,7 +598,7 @@ async function configurarPaginaRanking() {
         ranking.forEach((item, index) => {
             const card = document.createElement("article"); card.className = "review-card";
             const titulo = document.createElement("h3"); titulo.textContent = `${index + 1}. ${item.tituloLivro} → ${item.tituloFilme}`;
-            const media = document.createElement("p"); media.textContent = `Fidelidade média: ${Number(item.mediaFidelidade).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}/5 · ${item.totalAvaliacoes} avaliação(ões)`;
+            const media = document.createElement("p"); media.textContent = textoMediasRanking(item);
             card.append(titulo, media); lista.appendChild(card);
         });
     } catch (e) { msg.textContent = `Não foi possível carregar o ranking: ${e.message}`; }
