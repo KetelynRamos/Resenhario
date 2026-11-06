@@ -8,6 +8,7 @@ O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita "Liv
 
 | Documento | Para quê |
 |---|---|
+| [`docs/PUBLICAR_ONLINE.md`](docs/PUBLICAR_ONLINE.md) | Publicar o site com um link público (Render + Aiven) |
 | [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md) | Roteiro da apresentação (5–7 min) e plano B |
 | [`docs/AUDITORIA.md`](docs/AUDITORIA.md) | Conformidade com o escopo, riscos e plano de correções |
 
