@@ -114,10 +114,12 @@ app.UseExceptionHandler(erro => erro.Run(async context =>
     });
 }));
 
-if (app.Environment.IsDevelopment())
+// Swagger: ligado por padrão no Development. No servidor público (Production) liga com
+// a configuração Swagger:Habilitado = true (variável de ambiente Swagger__Habilitado).
+if (app.Configuration.GetValue("Swagger:Habilitado", app.Environment.IsDevelopment()))
 {
     app.MapOpenApi();
-    // Tela do Swagger para testar a API: http://localhost:5131/swagger
+    // Tela do Swagger para testar a API: /swagger
     app.UseSwaggerUI(options => options.SwaggerEndpoint("/openapi/v1.json", "Resenhário API"));
 }
 app.UseHttpsRedirection();

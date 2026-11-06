@@ -19,6 +19,8 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 30 minutos antes
 
+> **Com o link público** ([`PUBLICAR_ONLINE.md`](PUBLICAR_ONLINE.md)): basta abrir `https://SEU-ENDERECO.onrender.com/api/saude` **5 minutos antes**, porque o plano gratuito "acorda" em cerca de 1 minuto, e deixar a aba aberta. Os itens de terminal abaixo só são necessários para rodar localmente, que vira o **plano B**.
+
 - [ ] Console do Aiven: serviço **Running** (planos gratuitos podem desligar sem uso; se estiver desligado, *Power on* e esperar).
 - [ ] `cd BACKEND/Resenhario.Api` e `dotnet run --launch-profile http`; deixar o terminal aberto.
 - [ ] `http://localhost:5131/api/saude` → `"banco": "conectado"`.
