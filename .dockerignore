@@ -1,0 +1,10 @@
+# Arquivos que não precisam ir para a imagem
+**/bin/
+**/obj/
+.git/
+.vs/
+.vscode/
+docs/
+BANCO DE DADOS/
+**/wwwroot/_teste/
+**/*.user
