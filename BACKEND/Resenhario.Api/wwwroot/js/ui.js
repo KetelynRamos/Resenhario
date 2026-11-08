@@ -61,7 +61,7 @@ function matizDoTexto(texto) {
 function criarPlaceholder(titulo, tipo) {
     const div = el("div", `capa-placeholder capa-${tipo === "Filme" ? "filme" : "livro"}`);
     div.style.setProperty("--matiz", matizDoTexto(titulo));
-    div.append(el("span", "capa-placeholder-tipo", tipo === "Filme" ? "🎬 Filme" : "📖 Livro"),
+    div.append(el("span", "capa-placeholder-tipo", tipo === "Filme" ? "Filme" : "Livro"),
         el("strong", "", titulo || "Sem título"));
     return div;
 }
@@ -111,11 +111,10 @@ function mostrarSkeleton(container, quantidade = 6, formato = "obra") {
 }
 
 // Mensagem amigável para listas vazias ou erros.
-// opcoes: { icone, titulo, texto, botao: { texto, href } , erro }
+// opcoes: { titulo, texto, botao: { texto, href }, erro }
 function mostrarEstadoVazio(container, opcoes) {
     const caixa = el("div", `estado-vazio${opcoes.erro ? " estado-erro" : ""}`);
-    caixa.append(el("span", "estado-vazio-icone", opcoes.icone || (opcoes.erro ? "⚠️" : "🎞️")),
-        el("h3", "", opcoes.titulo), el("p", "", opcoes.texto || ""));
+    caixa.append(el("h3", "", opcoes.titulo), el("p", "", opcoes.texto || ""));
     if (opcoes.botao) {
         const link = el("a", "botao", opcoes.botao.texto);
         link.href = opcoes.botao.href;
@@ -279,8 +278,8 @@ function criarDuelo(item, destaque = false) {
         el("p", "duelo-sub", `${item.autorLivro || ""} → ${filmeTexto}${item.diretor ? `, de ${item.diretor}` : ""}`));
     const notas = el("div", "duelo-notas");
     notas.append(
-        criarBlocoNota("📖 Nota do livro", item.mediaNotaLivro, item.totalResenhasLivro, "resenha", "resenhas", "nota-livro"),
-        criarBlocoNota("🎬 Fidelidade do filme", item.mediaFidelidade, item.totalAvaliacoes, "avaliação", "avaliações", "nota-filme"));
+        criarBlocoNota("Nota do livro", item.mediaNotaLivro, item.totalResenhasLivro, "resenha", "resenhas", "nota-livro"),
+        criarBlocoNota("Fidelidade do filme", item.mediaFidelidade, item.totalAvaliacoes, "avaliação", "avaliações", "nota-filme"));
     info.appendChild(notas);
 
     card.append(imagens, info);

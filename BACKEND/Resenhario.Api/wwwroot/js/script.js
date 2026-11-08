@@ -41,7 +41,7 @@ async function carregarLivrosEm(container, comEstante = false) {
     try {
         const livros = await api("/Livro");
         if (!livros.length) {
-            mostrarEstadoVazio(container, { icone: "📚", titulo: "O catálogo ainda está vazio", texto: "Pesquise no Google Books e adicione o primeiro livro." });
+            mostrarEstadoVazio(container, { titulo: "O catálogo ainda está vazio", texto: "Pesquise no Google Books e adicione o primeiro livro." });
             return;
         }
         container.replaceChildren(...livros.map(l => cardLivro(l, comEstante)));
@@ -56,7 +56,7 @@ async function carregarFilmesEm(container, comEstante = false) {
     try {
         const filmes = await api("/Filme");
         if (!filmes.length) {
-            mostrarEstadoVazio(container, { icone: "🎬", titulo: "Nenhum filme no catálogo", texto: "Pesquise no TMDB e adicione o primeiro filme." });
+            mostrarEstadoVazio(container, { titulo: "Nenhum filme no catálogo", texto: "Pesquise no TMDB e adicione o primeiro filme." });
             return;
         }
         container.replaceChildren(...filmes.map(f => cardFilme(f, comEstante)));
@@ -115,7 +115,7 @@ async function carregarDestaquesHome() {
 
         if (!ranking.length) {
             document.querySelector(".hero-destaque").hidden = true;
-            mostrarEstadoVazio(duelos, { icone: "🎬", titulo: "Ainda não há adaptações avaliadas", texto: "Escreva a primeira resenha com nota de fidelidade.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(duelos, { titulo: "Ainda não há adaptações avaliadas", texto: "Escreva a primeira resenha com nota de fidelidade.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
             return;
         }
         const [primeiro, ...outros] = ranking;
@@ -158,7 +158,7 @@ function iniciarPaginaLivros() {
             const livros = await api(`/Livro/buscar?q=${encodeURIComponent(termo)}`);
             if (!livros.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum livro encontrado", texto: "Tente outro título ou o nome do autor." });
+                mostrarEstadoVazio(area, { titulo: "Nenhum livro encontrado", texto: "Tente outro título ou o nome do autor." });
                 return;
             }
             msg.textContent = `${livros.length} resultado(s) no Google Books.`;
@@ -179,7 +179,7 @@ async function salvarLivro(livro, botao, catalogo) {
     botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Livro", { method: "POST", body: JSON.stringify({ googleBId: livro.id, titulo: livro.titulo, autor: livro.autor || "Autor não informado", sinopse: livro.sinopse || null, isbn: livro.isbn || null, capaUrl: livro.capaUrl || null }) });
-        botao.textContent = "✓ No catálogo";
+        botao.textContent = "No catálogo";
         avisar(`“${livro.titulo}” foi adicionado ao catálogo.`);
         await carregarLivrosEm(catalogo, true);
     } catch (e) {
@@ -211,7 +211,7 @@ function iniciarPaginaFilmes() {
             const filmes = await api(`/Filme/buscar?q=${encodeURIComponent(termo)}`);
             if (!filmes.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum filme encontrado", texto: "Tente o título original ou outro termo." });
+                mostrarEstadoVazio(area, { titulo: "Nenhum filme encontrado", texto: "Tente o título original ou outro termo." });
                 return;
             }
             msg.textContent = `${filmes.length} filme(s) no TMDB.`;
@@ -232,7 +232,7 @@ async function salvarFilme(filme, botao, catalogo) {
     botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Filme", { method: "POST", body: JSON.stringify({ tmdbId: filme.tmdbId, titulo: filme.titulo, diretor: filme.diretor || null, anoLancamento: filme.anoLancamento, posterUrl: filme.posterUrl || null }) });
-        botao.textContent = "✓ No catálogo";
+        botao.textContent = "No catálogo";
         avisar(`“${filme.titulo}” foi salvo no catálogo.`);
         await carregarFilmesEm(catalogo, true);
         await iniciarVinculoAdaptacoes(true);
@@ -274,7 +274,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
 // Adaptações já vinculadas, cada uma no card "Livro vs. Filme".
 function renderizarAdaptacoes(lista, adaptacoes) {
     if (!adaptacoes.length) {
-        mostrarEstadoVazio(lista, { icone: "🔗", titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
+        mostrarEstadoVazio(lista, { titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
         return;
     }
     lista.replaceChildren(...adaptacoes.map(a => criarDuelo(a)));
@@ -360,7 +360,7 @@ async function iniciarEstante() {
     if (!area) return;
     if (!usuarioAtual()?.token) {
         document.getElementById("painel-estatisticas").hidden = true;
-        mostrarEstadoVazio(area, { icone: "🔒", titulo: "Entre para ver sua estante", texto: "Sua estante guarda o que você quer ler, está lendo e já leu.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
+        mostrarEstadoVazio(area, { titulo: "Entre para ver sua estante", texto: "Sua estante guarda o que você quer ler, está lendo e já leu.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
         return;
     }
     mostrarSkeleton(area, 8);
@@ -369,7 +369,7 @@ async function iniciarEstante() {
         renderizarEstatisticasLeitura(itens);
         configurarFiltrosEstante(area);
         if (!itens.length) {
-            mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
             return;
         }
         area.replaceChildren(...itens.map(item => cardEstante(item, itens, area)));
@@ -414,7 +414,7 @@ function cardEstante(item, itens, area) {
             card.remove();
             renderizarEstatisticasLeitura(itens);
             avisar("Item removido da estante.");
-            if (!itens.length) mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros do catálogo.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            if (!itens.length) mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Adicione livros do catálogo.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
         } catch (err) { remover.disabled = false; avisar(err.message, "erro"); }
     });
     acoes.append(select, remover);
@@ -426,11 +426,11 @@ function renderizarEstatisticasLeitura(itens) {
     if (!area) return;
     const livros = itens.filter(item => item.tipo === "Livro");
     const contar = status => livros.filter(item => item.status === status).length;
-    const numeros = [["📚", "Na estante", itens.length], ["✅", "Lidos", contar("Lido")], ["📖", "Lendo", contar("Lendo")],
-        ["🔖", "Quero ler", contar("Quero ler")], ["💤", "Abandonados", contar("Abandonado")]];
-    area.replaceChildren(...numeros.map(([icone, rotulo, valor]) => {
+    const numeros = [["Na estante", itens.length], ["Lidos", contar("Lido")], ["Lendo", contar("Lendo")],
+        ["Quero ler", contar("Quero ler")], ["Abandonados", contar("Abandonado")]];
+    area.replaceChildren(...numeros.map(([rotulo, valor]) => {
         const card = el("article", "estatistica");
-        card.append(el("span", "estatistica-icone", icone), el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
+        card.append(el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
         return card;
     }));
     renderizarGraficos(livros);
@@ -568,7 +568,7 @@ async function carregarResenhasEm(lista, pagina, tamanho, acrescentar = false) {
     try {
         const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=${tamanho}`);
         if (!dados.itens.length && !acrescentar) {
-            mostrarEstadoVazio(lista, { icone: "✍️", titulo: "Ainda não há resenhas", texto: "Seja a primeira pessoa a comparar um livro com o filme.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(lista, { titulo: "Ainda não há resenhas", texto: "Seja a primeira pessoa a comparar um livro com o filme.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
             return dados;
         }
         const cards = dados.itens.map(cardResenha);
@@ -605,13 +605,13 @@ function cardResenha(review) {
 
     // Notas: estrelas para o livro e "chip" de fidelidade para o filme
     const notas = el("div", "resenha-notas");
-    const chipLivro = el("span", "chip chip-livro", "📖 Livro ");
+    const chipLivro = el("span", "chip chip-livro", "Livro ");
     chipLivro.appendChild(criarEstrelas(review.notaLivro));
     notas.appendChild(chipLivro);
     if (review.tituloFilme && review.notaFidelidade != null) {
         // Mostra o ano só se ele ainda não estiver no título (ex.: "Duna (1984)").
         const ano = review.anoFilme && !review.tituloFilme.includes(String(review.anoFilme)) ? ` (${review.anoFilme})` : "";
-        const chipFilme = el("span", "chip chip-filme", `🎬 Fidelidade de ${review.tituloFilme}${ano}: `);
+        const chipFilme = el("span", "chip chip-filme", `Fidelidade de ${review.tituloFilme}${ano}: `);
         chipFilme.appendChild(el("b", "", `${review.notaFidelidade}/5`));
         notas.appendChild(chipFilme);
     }
@@ -643,7 +643,7 @@ function criarComparativo(review) {
     const caixa = el("p", "resenha-comparativo");
     const primeiroNome = review.nomeUsuario.split(" ")[0];
     if (review.totalResenhasLivro <= 1 || review.mediaNotaLivro == null) {
-        caixa.textContent = "✨ Primeira resenha deste livro na comunidade";
+        caixa.textContent = "Primeira resenha deste livro na comunidade";
         return caixa;
     }
     const diferenca = review.notaLivro - review.mediaNotaLivro;
@@ -685,7 +685,7 @@ async function iniciarRanking() {
         const ranking = (await api("/Adaptacao/ranking")).slice(0, 10);
         if (!ranking.length) {
             lista.replaceChildren();
-            mostrarEstadoVazio(podio, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Uma adaptação entra no ranking quando recebe pelo menos 2 notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(podio, { titulo: "O ranking ainda está vazio", texto: "Uma adaptação entra no ranking quando recebe pelo menos 2 notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
             return;
         }
         // No pódio o 1º lugar fica no meio: ordem visual 2º, 1º, 3º.
