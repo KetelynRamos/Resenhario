@@ -808,6 +808,38 @@ fieldset { border: 0; }
 fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 .campo-fidelidade { padding: 14px 16px; border-radius: var(--raio-pequeno); background: rgba(163, 32, 47, .08); border: 1px solid rgba(163, 32, 47, .35); animation: entrar .3s ease; }
 
+/* Meta de leitura (desafio de 6 meses) -------------------------------------- */
+.meta {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 22px;
+    padding: clamp(22px, 3vw, 32px);
+    border-radius: var(--raio);
+    border: 1px solid rgba(242, 179, 61, .3);
+    background:
+        radial-gradient(60% 120% at 100% 0%, rgba(242, 179, 61, .14), transparent 60%),
+        linear-gradient(160deg, var(--painel-2), var(--fundo-elevado));
+}
+.meta h2 { margin: 6px 0 4px; }
+.meta-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+/* Barra de progresso: a largura do preenchimento vem da variável --progresso */
+.meta-barra { height: 14px; border-radius: 999px; background: rgba(255, 255, 255, .07); overflow: hidden; }
+.meta-barra::after {
+    content: "";
+    display: block;
+    width: var(--progresso);
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--ambar-escuro), var(--ambar), var(--ambar-claro));
+    transition: width .8s ease;
+}
+.meta-comparacao { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.meta-comparacao div { display: grid; gap: 2px; padding: 12px 14px; border-radius: var(--raio-pequeno); background: rgba(255, 255, 255, .03); border: 1px solid var(--borda); }
+.meta-comparacao strong { font: 400 2.2rem/1 var(--fonte-titulo); color: var(--ambar); }
+.meta-comparacao span { color: var(--texto-suave); font-size: .82rem; }
+.meta-form { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; }
+.meta-form input { width: 110px; font: 400 1.6rem var(--fonte-titulo); text-align: center; }
+
 /* 14. Estante: gráficos e filtros ----------------------------------------- */
 .graficos { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 18px; margin-top: 18px; }
 .grafico { display: grid; gap: 12px; }
@@ -871,6 +903,8 @@ fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 }
 @media (max-width: 560px) {
     .pagina { padding-top: 32px; }
+    .meta-comparacao { grid-template-columns: 1fr; }
+    .meta-cabecalho { flex-direction: column; }
     .perfil-topo { flex-direction: column; align-items: flex-start; }
     .grade-obras { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
     .busca { flex-direction: column; border-radius: var(--raio); }

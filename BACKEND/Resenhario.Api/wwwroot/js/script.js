@@ -517,7 +517,9 @@ async function iniciarEstante() {
     }
     mostrarSkeleton(area, 8);
     try {
-        const itens = await api("/Estante");
+        const [itens, perfil] = await Promise.all([api("/Estante"), api("/Usuario/me")]);
+        estanteAtual = { itens, perfil };
+        renderizarMeta();
         renderizarEstatisticasLeitura(itens);
         configurarFiltrosEstante(area);
         if (!itens.length) {
@@ -547,6 +549,7 @@ function cardEstante(item, itens, area) {
             item.dataAtualizacao = new Date().toISOString();
             card.dataset.status = item.status;
             renderizarEstatisticasLeitura(itens);
+            renderizarMeta();
             aplicarFiltroEstante(area);
             avisar(`“${item.titulo}” agora está em “${item.status}”.`);
         } catch (err) {
@@ -618,7 +621,7 @@ async function renderizarGraficos(livros) {
     for (let i = 5; i >= 0; i--) meses.push(new Date(hoje.getFullYear(), hoje.getMonth() - i, 1));
     const lidosNoMes = mes => livros.filter(l => {
         if (l.status !== "Lido") return false;
-        const data = new Date(/[zZ]$/.test(l.dataAtualizacao) ? l.dataAtualizacao : l.dataAtualizacao + "Z");
+        const data = dataDaApi(l.dataAtualizacao);
         return data.getFullYear() === mes.getFullYear() && data.getMonth() === mes.getMonth();
     }).length;
     graficos.meses?.destroy();
@@ -630,6 +633,117 @@ async function renderizarGraficos(livros) {
         },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
     });
+    // Com meta definida: linha tracejada com o ritmo mensal da meta (total ÷ 6 meses).
+    const meta = estanteAtual?.perfil?.metaLivros;
+    if (meta) {
+        graficos.meses.data.datasets.push({ type: "line", label: "Ritmo da meta", data: meses.map(() => +(meta / 6).toFixed(1)),
+            borderColor: "#ff7a86", borderDash: [6, 6], borderWidth: 2, pointRadius: 0 });
+        graficos.meses.options.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true } };
+        graficos.meses.update();
+    }
+}
+
+// ---------------------------------------------------------------------
+// Meta de leitura: quantos livros ler nos próximos 6 meses
+// ---------------------------------------------------------------------
+let estanteAtual = null; // { itens, perfil } da página Minha estante
+
+// A API devolve datas em UTC sem o "Z"; acrescentamos para o navegador entender o fuso.
+function dataDaApi(iso) { return new Date(/[zZ]$/.test(iso) ? iso : iso + "Z"); }
+
+// Livros marcados como "Lido" a partir de uma data (dataAtualizacao = quando virou "Lido").
+function livrosLidosDesde(itens, inicio) {
+    return itens.filter(i => i.tipo === "Livro" && i.status === "Lido" && dataDaApi(i.dataAtualizacao) >= inicio).length;
+}
+
+function renderizarMeta() {
+    const area = document.getElementById("meta-leitura");
+    if (!area || !estanteAtual) return;
+    const { itens, perfil } = estanteAtual;
+    area.hidden = false;
+    const seisMesesAtras = new Date(); seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
+    const lidosUltimos6 = livrosLidosDesde(itens, seisMesesAtras);
+    const textoLidos = n => `${n} ${n === 1 ? "livro" : "livros"}`;
+
+    // Sem meta: convite para começar o desafio.
+    if (!perfil.metaLivros) {
+        const sugestao = Math.max(3, lidosUltimos6 + 2);
+        area.replaceChildren(el("p", "sobretitulo", "Desafio de leitura"),
+            el("h2", "", "Quantos livros você quer ler nos próximos 6 meses?"),
+            el("p", "texto-suave", lidosUltimos6
+                ? `Nos últimos 6 meses você leu ${textoLidos(lidosUltimos6)}. Que tal superar essa marca?`
+                : "Escolha um número possível e vá subindo. O importante é começar."),
+            criarFormMeta(sugestao));
+        return;
+    }
+
+    const inicio = dataDaApi(perfil.metaInicio);
+    const fim = new Date(inicio); fim.setMonth(fim.getMonth() + 6);
+    const lidosNaMeta = livrosLidosDesde(itens, inicio);
+    const meta = perfil.metaLivros;
+    const porcentagem = Math.min(100, Math.round(lidosNaMeta / meta * 100));
+    const diasRestantes = Math.max(0, Math.ceil((fim - new Date()) / 86400000));
+    const encerrada = diasRestantes === 0;
+    const faltam = Math.max(0, meta - lidosNaMeta);
+
+    let titulo = `${lidosNaMeta} de ${meta} livros`;
+    let frase = `Faltam ${textoLidos(faltam)} e ${diasRestantes} ${diasRestantes === 1 ? "dia" : "dias"}. Bora!`;
+    if (lidosNaMeta >= meta) { titulo = "Desafio batido!"; frase = `Você leu ${textoLidos(lidosNaMeta)} e passou da meta. Que tal subir a régua?`; }
+    else if (encerrada) { titulo = "O desafio acabou"; frase = `Você leu ${textoLidos(lidosNaMeta)} de ${meta}. Bora para o próximo?`; }
+
+    const barra = el("div", "meta-barra");
+    barra.setAttribute("role", "progressbar");
+    barra.setAttribute("aria-valuemin", "0");
+    barra.setAttribute("aria-valuemax", String(meta));
+    barra.setAttribute("aria-valuenow", String(lidosNaMeta));
+    barra.style.setProperty("--progresso", `${porcentagem}%`);
+
+    // Comparação com os 6 meses anteriores ao início do desafio.
+    const antesInicio = new Date(inicio); antesInicio.setMonth(antesInicio.getMonth() - 6);
+    const lidosAntes = itens.filter(i => i.tipo === "Livro" && i.status === "Lido"
+        && dataDaApi(i.dataAtualizacao) >= antesInicio && dataDaApi(i.dataAtualizacao) < inicio).length;
+    const ritmoNecessario = encerrada ? 0 : (faltam / Math.max(1, diasRestantes / 30)).toFixed(1).replace(".", ",");
+    const comparacao = el("div", "meta-comparacao");
+    [[String(lidosAntes), "lidos nos 6 meses antes do desafio"],
+     [String(lidosNaMeta), "lidos desde que você topou"],
+     [faltam && !encerrada ? ritmoNecessario : "0", "livros por mês para chegar lá"]].forEach(([valor, rotulo]) => {
+        const item = el("div");
+        item.append(el("strong", "", valor), el("span", "", rotulo));
+        comparacao.appendChild(item);
+    });
+
+    const cabecalho = el("div", "meta-cabecalho");
+    const textos = el("div");
+    textos.append(el("p", "sobretitulo", `Desafio de leitura · até ${fim.toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}`),
+        el("h2", "", titulo), el("p", "texto-suave", frase));
+    const mudar = el("button", "botao botao-fantasma botao-pequeno", encerrada || lidosNaMeta >= meta ? "Novo desafio" : "Mudar meta");
+    mudar.type = "button";
+    const form = criarFormMeta(meta);
+    form.hidden = true;
+    mudar.addEventListener("click", () => { form.hidden = !form.hidden; });
+    cabecalho.append(textos, mudar);
+    area.replaceChildren(cabecalho, barra, comparacao, form);
+}
+
+function criarFormMeta(valorInicial) {
+    const form = el("form", "meta-form");
+    const campo = el("input");
+    campo.type = "number"; campo.min = "1"; campo.max = "100"; campo.required = true; campo.value = valorInicial;
+    campo.setAttribute("aria-label", "Quantidade de livros em 6 meses");
+    const botao = el("button", "", "Topar o desafio");
+    botao.type = "submit";
+    form.append(campo, el("span", "texto-suave", "livros em 6 meses"), botao);
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        try {
+            await api("/Usuario/me/meta", { method: "PUT", body: JSON.stringify({ metaLivros: Number(campo.value) }) });
+            estanteAtual.perfil = await api("/Usuario/me");
+            renderizarMeta();
+            renderizarEstatisticasLeitura(estanteAtual.itens);
+            avisar("Desafio aceito! A contagem começa hoje.");
+        } catch (err) { avisar(err.message, "erro"); }
+    });
+    return form;
 }
 
 // Filtros da prateleira: Todos, cada status de leitura ou só filmes.
