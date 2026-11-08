@@ -46,7 +46,7 @@ O projeto é **uma única aplicação ASP.NET Core** que faz duas coisas: serve 
 flowchart LR
     subgraph Navegador
         HTML["Páginas HTML + CSS<br/>(wwwroot)"]
-        JS["api.js · ui.js · script.js<br/>fetch() + JSON"]
+        JS["api.js · ui.js · paginas/*.js<br/>fetch() + JSON"]
         HTML --> JS
     end
 
@@ -85,7 +85,8 @@ flowchart LR
 BACKEND/Resenhario.Api/
 ├── Controllers/        AuthController, LivroController, FilmeController, AdaptacaoController,
 │                       EstanteController, ReviewController, UsuarioController,
-│                       CatalogoExternoController (APIs externas), SerieController (extra)
+│                       ComunidadeController (curtidas e comentários),
+│                       CatalogoExternoController (APIs externas)
 ├── Models/             Classes do domínio + Data Annotations
 │   └── Externos/       DTOs da Google Books API e da TMDB API
 ├── Data/               AppDbContext, SeedData (dados de demonstração), SeedImagens (capas e pôsteres)
@@ -101,7 +102,7 @@ BANCO DE DADOS/         Scripts SQL de criação e atualização (não destrutiv
 ```mermaid
 sequenceDiagram
     actor U as Usuário
-    participant P as filmes.html + script.js
+    participant P as filmes.html + paginas/filmes.js
     participant A as CatalogoExternoController
     participant T as TMDB API
     U->>P: digita "Coraline" e clica em Pesquisar
@@ -121,7 +122,7 @@ sequenceDiagram
 
 ## 3. Modelo de dados (MER)
 
-As tabelas são criadas pelos scripts `BANCO DE DADOS/01`, `05`, `08`, `09` e `10`. As seis tabelas previstas no escopo estão presentes: **Usuarios, Livros, Filmes, Adaptacoes, Reviews e Estante** (no banco, `Estantes`). `Series` é um extra, fora do escopo e escondido do menu.
+As tabelas são criadas pelos scripts `BANCO DE DADOS/01`, `05`, `08`, `09` e `10`. As seis tabelas previstas no escopo estão presentes: **Usuarios, Livros, Filmes, Adaptacoes, Reviews e Estante** (no banco, `Estantes`). A tabela antiga `Series` continua no banco (nada foi apagado), mas não é mais usada pelo código: séries ficam fora do escopo.
 
 ```mermaid
 erDiagram
@@ -187,16 +188,10 @@ erDiagram
     ESTANTES {
         int IdEstante PK
         int IdUsuario FK
-        int IdLivros FK "livro ou"
-        int IdFilme FK "filme ou"
-        int IdSerie FK "série"
+        int IdLivros FK "livro"
+        int IdFilme FK "ou filme"
         varchar Status
         datetime DataAtualizacao
-    }
-    SERIES {
-        int IdSerie PK
-        varchar Titulo
-        varchar FonteId
     }
 
     USUARIOS ||--o{ REVIEWS : escreve
@@ -211,14 +206,13 @@ erDiagram
     ADAPTACOES |o--o{ REVIEWS : "tem fidelidade avaliada em"
     LIVROS |o--o{ ESTANTES : "está em"
     FILMES |o--o{ ESTANTES : "está em"
-    SERIES |o--o{ ESTANTES : "está em"
 ```
 
 **Regras importantes**
 
 - **Adaptacoes** é a tabela de ligação (muitos-para-muitos) entre Livros e Filmes. O índice único `UQ_Adaptacoes_Livro_Filme` impede o mesmo vínculo duas vezes.
 - **Reviews** guarda a **avaliação dupla**: `NotaLivro` é obrigatória; `NotaFidelidade` e `IdAdaptacao` só são preenchidas se a pessoa viu uma adaptação **daquele livro** (regra conferida no `ReviewController`).
-- **Estantes** guarda um item por linha (livro, filme ou série). Os status válidos ficam no Model `Estante`: livro aceita *Quero ler / Lendo / Lido / Abandonado*; filme aceita *Quero ver / Assistindo / Assistido*.
+- **Estantes** guarda um item por linha (um livro ou um filme). Os status válidos ficam no Model `Estante`: livro aceita *Quero ler / Lendo / Lido / Abandonado*; filme aceita *Quero ver / Assistindo / Assistido*.
 - **Usuarios.Email** tem índice único (`UQ_Usuarios_Email`).
 - **Curtidas** tem índice único em (IdReview, IdUsuario): cada pessoa curte uma resenha uma vez só. Curtidas e comentários usam `ON DELETE CASCADE`: se a resenha for apagada, eles vão junto.
 - A **meta de leitura** fica no próprio usuário (`MetaLivros` + `MetaInicio`); o progresso é calculado a partir dos livros marcados como "Lido" na estante.
@@ -288,7 +282,6 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | Verbo | Rota | Descrição | Respostas |
 |---|---|---|---|
 | GET | `/api/Review/feed?pagina=1&tamanho=10&ordem=curtidas&idAdaptacao=5` | Feed paginado com capa, pôster, média da comunidade, avatar do autor, curtidas e comentários. `ordem`: `recentes` ou `curtidas`; filtros opcionais `idAdaptacao` e `idLivro` | **200** |
-| GET | `/api/Review` | Últimas 100 resenhas | **200** |
 | GET | `/api/Review/{id}` | Uma resenha | **200**, 404 |
 | POST 🔒 | `/api/Review` | Publica resenha com avaliação dupla | **201**, 400 |
 | DELETE 🔒 | `/api/Review/{id}` | Remove a própria resenha | **204**, 404 |
@@ -309,7 +302,6 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 |---|---|---|---|
 | GET | `/api/saude` | Minimal API: API e banco conectados? | **200**, 503 |
 | GET | `/swagger` | Interface do Swagger (ambiente Development) | 200 |
-| GET / POST 🔒 | `/api/Serie`, `/api/Serie/{id}`, `/api/Serie/buscar` | Séries via TVmaze (extra, fora do escopo) | 200, 201, 404 |
 
 **Por que esses status?** `201 Created` quando um recurso novo é criado (com o cabeçalho `Location` apontando para ele); `204 No Content` quando a alteração deu certo e não há nada novo para devolver (PUT e DELETE); `400` para dado inválido; `401` sem login; `404` quando não existe ou não é seu; `409 Conflict` quando a ação conflita com o estado atual (duplicado ou com vínculos); `502/504` quando a **API externa** falhou ou demorou; `503` quando um serviço necessário não está disponível (token do TMDB ausente, banco fora do ar).
 
@@ -359,7 +351,7 @@ As chamadas ficam no `CatalogoExternoController`: o navegador chama a **nossa** 
 
 ## 7. Front-end
 
-- **Sem framework:** HTML, CSS e JavaScript puro, organizados em três arquivos JS: `api.js` (todas as chamadas `fetch` e a sessão), `ui.js` (componentes visuais reutilizáveis: card de obra, card **Livro vs. Filme**, estrelas, avisos, skeleton, estados vazios) e `script.js` (lógica de cada página).
+- **Sem framework:** HTML, CSS e JavaScript puro, organizados assim: `api.js` (todas as chamadas `fetch` e a sessão), `ui.js` (componentes visuais reutilizáveis: card de obra, card **Livro vs. Filme**, estrelas, avisos, skeleton, estados vazios), `catalogo.js` e `resenhas.js` (partes usadas em mais de uma página) e a pasta `js/paginas/`, com **um arquivo por página** (`livros.js`, `filmes.js`, `estante.js`...). Cada página HTML carrega só os arquivos de que precisa.
 - **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em **Bebas Neue** (letra de cartaz de cinema) e texto em Inter (Google Fonts), sem emojis (ícones em SVG), layout responsivo testado em 390 px (celular) e 1280 px.
 - **Páginas:** início, livros, filmes, duelo Livro vs. Filme (`adaptacao.html?id=N`), feed, ranking (Top do Resenhário), resenhar, minha estante (com o desafio de leitura), perfil e entrar.
 - **Resiliência:** placeholder desenhado quando falta imagem, mensagens amigáveis quando a API falha e Chart.js com cópia local para funcionar sem internet.

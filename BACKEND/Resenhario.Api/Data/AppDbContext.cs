@@ -18,7 +18,6 @@ namespace Resenhario.Api.Data
         public DbSet<Adaptacao> Adaptacoes { get; set; } = null!;
         public DbSet<Estante> Estantes { get; set; } = null!;
         public DbSet<Review> Reviews { get; set; } = null!;
-        public DbSet<Serie> Series { get; set; } = null!;
         public DbSet<Curtida> Curtidas { get; set; } = null!;
         public DbSet<Comentario> Comentarios { get; set; } = null!;
     }

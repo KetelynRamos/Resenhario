@@ -5,7 +5,7 @@ using Resenhario.Api.Models.Externos;
 
 namespace Resenhario.Api.Controllers;
 
-// Integração com as APIs externas (Google Books, TMDB e TVmaze).
+// Integração com as APIs externas (Google Books e TMDB).
 // O navegador chama a NOSSA API, e ela chama as APIs externas: assim as chaves
 // ficam só no servidor e a tela recebe os dados já no formato que ela usa.
 [ApiController]
@@ -25,7 +25,6 @@ public class CatalogoExternoController : ControllerBase
 
     public record FilmeExterno(string TmdbId, string Titulo, string? Diretor, int? AnoLancamento, string? PosterUrl);
     public record LivroExterno(string Id, string Titulo, string Autor, string? Sinopse, string? Isbn, string? CapaUrl, string? AnoPublicacao);
-    public record SerieExterna(string FonteId, string Titulo, string? Sinopse, string? ImagemUrl, string? DataEstreia);
 
     // GET /api/Livro/buscar?q=duna → busca na Google Books API
     [HttpGet("livros")]
@@ -161,45 +160,6 @@ public class CatalogoExternoController : ControllerBase
         return request;
     }
 
-    [HttpGet("series")]
-    [HttpGet("~/api/Serie/buscar")]
-    public async Task<IActionResult> BuscarSeries([FromQuery] string? termo, [FromQuery] string? q, CancellationToken cancellationToken)
-    {
-        termo = string.IsNullOrWhiteSpace(q) ? termo : q;
-        if (string.IsNullOrWhiteSpace(termo)) return BadRequest("Informe o nome da série.");
-        if (termo.Trim().Length > 150) return BadRequest("A pesquisa deve ter no máximo 150 caracteres.");
-        try
-        {
-            var client = _httpClientFactory.CreateClient("CatalogoExterno");
-            var url = "https://api.tvmaze.com/search/shows?q=" + Uri.EscapeDataString(termo.Trim());
-            using var response = await client.GetAsync(url, cancellationToken);
-            if (!response.IsSuccessStatusCode)
-                return StatusCode(StatusCodes.Status502BadGateway, new { mensagem = $"O TVmaze respondeu com HTTP {(int)response.StatusCode}." });
-            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            using var json = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
-            var saida = new List<SerieExterna>();
-            foreach (var item in json.RootElement.EnumerateArray().Take(12))
-            {
-                if (!item.TryGetProperty("show", out var show)) continue;
-                var id = show.TryGetProperty("id", out var idElement) ? idElement.ToString() : null;
-                if (string.IsNullOrWhiteSpace(id)) continue;
-                var titulo = Texto(show, "name") ?? "Série";
-                var sinopseHtml = Texto(show, "summary") ?? "";
-                var sinopse = System.Text.RegularExpressions.Regex.Replace(sinopseHtml, "<[^>]*>", " ");
-                sinopse = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(sinopse, "\\s+", " ")).Trim();
-                string? imagem = null;
-                if (show.TryGetProperty("image", out var image) && image.ValueKind == JsonValueKind.Object)
-                    imagem = Texto(image, "medium") ?? Texto(image, "original");
-                saida.Add(new SerieExterna("tvmaze:" + id, titulo, sinopse, imagem, Texto(show, "premiered")));
-            }
-            return Ok(saida);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { return StatusCode(499, new { mensagem = "A pesquisa foi cancelada." }); }
-        catch (OperationCanceledException) { return StatusCode(StatusCodes.Status504GatewayTimeout, new { mensagem = "O TVmaze demorou demais para responder." }); }
-        catch (HttpRequestException) { return StatusCode(StatusCodes.Status502BadGateway, new { mensagem = "Não foi possível conectar ao TVmaze." }); }
-        catch (JsonException) { return StatusCode(StatusCodes.Status502BadGateway, new { mensagem = "O TVmaze retornou uma resposta inválida." }); }
-    }
-
     // Busca o diretor de um filme. Se falhar, devolve null: o filme aparece mesmo sem diretor.
     private static async Task<string?> BuscarDiretor(HttpClient client, string token, int id, CancellationToken cancellationToken)
     {
@@ -217,10 +177,4 @@ public class CatalogoExternoController : ControllerBase
             return null;
         }
     }
-
-    // Usado pela busca de séries (TVmaze), que continua lendo o JSON campo a campo.
-    private static string? Texto(JsonElement elemento, string propriedade) =>
-        elemento.TryGetProperty(propriedade, out var valor) && valor.ValueKind == JsonValueKind.String
-            ? valor.GetString()
-            : null;
 }

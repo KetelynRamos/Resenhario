@@ -11,7 +11,6 @@ public class Estante
     public int IdUsuario { get; set; }
     public int? IdLivros { get; set; }
     public int? IdFilme { get; set; }
-    public int? IdSerie { get; set; }
     [StringLength(50)]
     public string Status { get; set; } = string.Empty;
     public DateTime DataAtualizacao { get; set; }
