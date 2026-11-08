@@ -71,55 +71,34 @@ public class AdaptacaoController : ControllerBase
     public async Task<ActionResult<IEnumerable<AdaptacaoResposta>>> GetAdaptacoes() =>
         Ok(await ConsultarAdaptacoes().ToListAsync());
 
-    // Ranking das adaptações com a "avaliação dupla" da comunidade:
-    // - MediaFidelidade: média das notas de fidelidade dadas a ESTA adaptação;
-    // - MediaNotaLivro: média das notas de qualidade dadas ao LIVRO (média de aceitação da obra).
+    // Ranking das adaptações com a "avaliação dupla" da comunidade (MediaFidelidade do filme
+    // e MediaNotaLivro do livro). São poucas adaptações: buscamos todas com a mesma consulta
+    // da lista e filtramos/ordenamos na memória com LINQ.
     [HttpGet("ranking")]
     public async Task<IActionResult> Ranking()
     {
-        var ranking = await (
-            from a in _context.Adaptacoes
-            join l in _context.Livros on a.IdLivro equals l.IdLivros
-            join f in _context.Filmes on a.IdFilme equals f.IdFilme
-            select new
-            {
-                a.IdAdaptacoes,
-                a.IdLivro,
-                a.IdFilme,
-                TituloLivro = l.Titulo,
-                AutorLivro = l.Autor,
-                l.CapaUrl,
-                TituloFilme = f.Titulo,
-                f.Diretor,
-                f.AnoLancamento,
-                f.PosterUrl,
-                MediaFidelidade = _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-                    .Select(r => (double?)r.NotaFidelidade).Average(),
-                TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null),
-                MediaNotaLivro = _context.Reviews.Where(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
-                    .Select(r => (double?)r.NotaLivro).Average(),
-                TotalResenhasLivro = _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
-            })
-        .Where(x => x.TotalAvaliacoes >= MinimoAvaliacoesRanking)
-        .OrderByDescending(x => x.MediaFidelidade)
-        .ThenByDescending(x => x.TotalAvaliacoes)
-        .ThenByDescending(x => x.MediaNotaLivro) // desempate: o livro mais bem avaliado
-        .ThenBy(x => x.TituloFilme)            // e, por fim, ordem alfabética (resultado sempre igual)
-        .Take(20)
-        .ToListAsync();
+        var todas = await ConsultarAdaptacoes().ToListAsync();
+        var ranking = todas
+            .Where(a => a.TotalAvaliacoes >= MinimoAvaliacoesRanking)
+            .OrderByDescending(a => a.MediaFidelidade)
+            .ThenByDescending(a => a.TotalAvaliacoes)
+            .ThenByDescending(a => a.MediaNotaLivro) // desempate: o livro mais bem avaliado
+            .ThenBy(a => a.TituloFilme)              // e, por fim, ordem alfabética (resultado sempre igual)
+            .Take(20)
+            .ToList();
         return Ok(ranking);
     }
 
     [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpPost]
-    public async Task<IActionResult> CriarAdaptacao([FromBody] CriarAdaptacaoRequest dados, CancellationToken cancellationToken)
+    public async Task<IActionResult> CriarAdaptacao([FromBody] CriarAdaptacaoRequest dados)
     {
         if (dados.IdLivro <= 0 || dados.IdFilme <= 0)
             return BadRequest("Selecione um livro e um filme válidos.");
-        var livro = await _context.Livros.FindAsync([dados.IdLivro], cancellationToken);
+        var livro = await _context.Livros.FindAsync(dados.IdLivro);
         if (livro is null)
             return BadRequest("O livro selecionado não existe no catálogo.");
-        var filme = await _context.Filmes.FindAsync([dados.IdFilme], cancellationToken);
+        var filme = await _context.Filmes.FindAsync(dados.IdFilme);
         if (filme is null)
             return BadRequest("O filme selecionado não existe no catálogo.");
 
@@ -131,7 +110,7 @@ public class AdaptacaoController : ControllerBase
         // O sistema não confia só no usuário: confere no TMDB se o filme veio deste livro.
         // Se o TMDB diz que não, devolve 409 com o aviso; a tela pergunta e, se a pessoa
         // confirmar, manda de novo com VincularMesmoAssim = true. Sem TMDB, o vínculo segue normal.
-        var conferencia = await Conferir(livro, filme, cancellationToken);
+        var conferencia = await Conferir(livro, filme);
         if (conferencia.Situacao == "nao-confere" && !dados.VincularMesmoAssim)
             return Conflict(new { mensagem = conferencia.Mensagem, precisaConfirmar = true, conferencia.AutoresOriginais });
 
@@ -149,19 +128,19 @@ public class AdaptacaoController : ControllerBase
     // GET /api/Adaptacao/5/conferencia → o TMDB confirma que este filme veio deste livro?
     // Mostrado como selo na página do duelo.
     [HttpGet("{id:int}/conferencia")]
-    public async Task<IActionResult> GetConferencia(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetConferencia(int id)
     {
-        var adaptacao = await _context.Adaptacoes.FindAsync([id], cancellationToken);
+        var adaptacao = await _context.Adaptacoes.FindAsync(id);
         if (adaptacao is null) return NotFound();
-        var livro = await _context.Livros.FindAsync([adaptacao.IdLivro], cancellationToken);
-        var filme = await _context.Filmes.FindAsync([adaptacao.IdFilme], cancellationToken);
+        var livro = await _context.Livros.FindAsync(adaptacao.IdLivro);
+        var filme = await _context.Filmes.FindAsync(adaptacao.IdFilme);
         if (livro is null || filme is null) return NotFound();
-        return Ok(await Conferir(livro, filme, cancellationToken));
+        return Ok(await Conferir(livro, filme));
     }
 
-    private async Task<ConferenciaResposta> Conferir(Livro livro, Filme filme, CancellationToken cancellationToken)
+    private async Task<ConferenciaResposta> Conferir(Livro livro, Filme filme)
     {
-        var creditos = await _conferencia.BuscarCreditosAsync(filme.TmdbId, cancellationToken);
+        var creditos = await _conferencia.BuscarCreditosAsync(filme.TmdbId);
         if (creditos is null)
             return new ConferenciaResposta("nao-conferida", [], "Não foi possível conferir este vínculo no TMDB agora.");
 

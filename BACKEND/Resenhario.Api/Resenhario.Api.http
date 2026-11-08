@@ -34,9 +34,6 @@ GET {{base}}/api/Livro
 ### Um livro → 200 ou 404
 GET {{base}}/api/Livro/1
 
-### Médias da comunidade de um livro (nota da obra + fidelidade de cada adaptação)
-GET {{base}}/api/Livro/1/medias
-
 ### Buscar no Google Books → 200 (502 se a API externa falhar)
 GET {{base}}/api/Livro/buscar?q=Duna
 
@@ -128,7 +125,3 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "idLivro": 3, "notaLivro": 7, "comentario": "Nota inválida" }
-
-### Excluir minha resenha → 204 (404 se for de outra pessoa)
-DELETE {{base}}/api/Review/1
-Authorization: Bearer {{token}}
