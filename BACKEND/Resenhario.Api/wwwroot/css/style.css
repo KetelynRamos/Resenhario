@@ -584,6 +584,20 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .nota-filme .nota-valor { color: #ff8f9a; }
 .nota-filme .nota-barra::after { background: linear-gradient(90deg, var(--cortina), #ff7a86); }
 
+/* Card clicável: o link do título se estica sobre o card inteiro (::after cobre tudo) */
+.duelo-clicavel { position: relative; cursor: pointer; }
+.duelo-link { color: inherit; }
+.duelo-link::after { content: ""; position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+.duelo-link:focus-visible { outline: none; }
+.duelo-clicavel:has(.duelo-link:focus-visible) { outline: 2px solid var(--ambar); outline-offset: 3px; }
+.duelo-clicavel:hover .duelo-link { color: var(--ambar-claro); }
+.resenha-acao a { color: var(--ambar); font-weight: 600; }
+.resenha-acao a:hover { text-decoration: underline; }
+
+/* Página do duelo */
+.adaptacao-acoes { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.pagina-estreita-conteudo { max-width: 820px; }
+
 /* Versão horizontal (destaque na home e linhas do ranking) */
 .duelo-destaque, .ranking-linha .duelo { grid-template-columns: minmax(220px, 300px) 1fr; align-items: center; gap: 28px; }
 

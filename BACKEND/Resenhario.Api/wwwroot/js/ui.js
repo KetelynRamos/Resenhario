@@ -250,6 +250,17 @@ async function carregarChartJs() {
     return true;
 }
 
+// Título do card. Com link, o <a> "estica" sobre o card inteiro (CSS .duelo-clicavel),
+// então clicar em qualquer parte do card abre a página do duelo.
+function criarTituloDuelo(item, semLink) {
+    const titulo = el("h3");
+    if (semLink) { titulo.textContent = item.tituloLivro; return titulo; }
+    const link = el("a", "duelo-link", item.tituloLivro);
+    link.href = `/paginas/adaptacao.html?id=${item.idAdaptacoes}`;
+    titulo.appendChild(link);
+    return titulo;
+}
+
 // ----- Setas dos carrosséis (no celular basta arrastar com o dedo) --
 function configurarCarrosseis() {
     document.querySelectorAll(".carrossel").forEach(carrossel => {
@@ -290,8 +301,9 @@ function criarBlocoNota(rotulo, media, total, singular, plural, classe) {
     return bloco;
 }
 
-function criarDuelo(item, destaque = false) {
-    const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}`);
+// semLink = true na própria página do duelo (o card não precisa levar a ele mesmo).
+function criarDuelo(item, destaque = false, semLink = false) {
+    const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}${semLink ? "" : " duelo-clicavel"}`);
 
     const imagens = el("div", "duelo-imagens");
     const livro = el("figure", "duelo-capa duelo-livro");
@@ -304,7 +316,7 @@ function criarDuelo(item, destaque = false) {
     const filmeTexto = [item.tituloFilme, item.anoLancamento && `(${item.anoLancamento})`].filter(Boolean).join(" ");
     info.append(
         el("p", "duelo-veredito", vereditoFidelidade(item.mediaFidelidade)),
-        el("h3", "", item.tituloLivro),
+        criarTituloDuelo(item, semLink),
         el("p", "duelo-sub", `${item.autorLivro || ""} → ${filmeTexto}${item.diretor ? `, de ${item.diretor}` : ""}`));
     const notas = el("div", "duelo-notas");
     notas.append(

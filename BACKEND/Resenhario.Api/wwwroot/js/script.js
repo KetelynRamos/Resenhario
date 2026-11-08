@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarResenhas();
     iniciarFeed();
     iniciarRanking();
+    iniciarAdaptacao();
 });
 
 // ---------------------------------------------------------------------
@@ -351,6 +352,33 @@ function iniciarLogin() {
             botao.disabled = false;
         }
     });
+}
+
+// ---------------------------------------------------------------------
+// Página do duelo: card Livro vs. Filme + resenhas mais curtidas dele
+// ---------------------------------------------------------------------
+async function iniciarAdaptacao() {
+    if (!document.getElementById("pagina-adaptacao")) return;
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const areaDuelo = document.getElementById("adaptacao-duelo");
+    const lista = document.getElementById("adaptacao-resenhas");
+    mostrarSkeleton(areaDuelo, 1, "duelo");
+    try {
+        const item = await api(`/Adaptacao/${id}`);
+        document.title = `${item.tituloLivro} vs. ${item.tituloFilme} · Resenhário`;
+        document.getElementById("adaptacao-titulo").textContent = item.tituloLivro;
+        document.getElementById("adaptacao-subtitulo").textContent =
+            `No cinema: ${item.tituloFilme}${item.anoLancamento ? ` (${item.anoLancamento})` : ""}${item.diretor ? `, de ${item.diretor}` : ""}.`;
+        areaDuelo.replaceChildren(criarDuelo(item, true, true));
+        const avaliar = `/paginas/reviews.html?livro=${item.idLivro}&adaptacao=${item.idAdaptacoes}`;
+        document.getElementById("adaptacao-avaliar").href = avaliar;
+        await carregarResenhasEm(lista, { idAdaptacao: id, ordem: "curtidas", tamanho: 10,
+            vazio: { titulo: "Ninguém avaliou esse duelo ainda", texto: "Viu o filme e leu o livro? A primeira opinião é sua.", botao: { texto: "Dar minha nota", href: avaliar } } });
+    } catch {
+        areaDuelo.replaceChildren();
+        lista.replaceChildren();
+        mostrarEstadoVazio(areaDuelo, { erro: true, titulo: "Não achamos esse duelo", texto: "Ele pode ter sido removido. Que tal ver o Top do Resenhário?", botao: { texto: "Ver o Top", href: "/paginas/ranking.html" } });
+    }
 }
 
 // ---------------------------------------------------------------------
@@ -799,6 +827,17 @@ async function iniciarResenhas() {
     livroSelect.addEventListener("change", atualizarAdaptacoes);
     adaptacaoSelect.addEventListener("change", () => campoFidelidade.hidden = !adaptacaoSelect.value);
 
+    // Vindo da página de um duelo (reviews.html?livro=5&adaptacao=7): já deixa livro e filme escolhidos.
+    const parametros = new URLSearchParams(location.search);
+    if (parametros.get("livro")) {
+        livroSelect.value = parametros.get("livro");
+        atualizarAdaptacoes();
+        if (parametros.get("adaptacao")) {
+            adaptacaoSelect.value = parametros.get("adaptacao");
+            campoFidelidade.hidden = !adaptacaoSelect.value;
+        }
+    }
+
     form.addEventListener("submit", async e => {
         e.preventDefault();
         if (!exigirLogin()) return;
@@ -856,7 +895,10 @@ function cardResenha(review) {
     const topo = el("header", "resenha-topo");
     const quem = el("div", "resenha-quem");
     const linha = el("span", "resenha-acao", "resenhou ");
-    linha.append(el("b", "", review.titulo || "um livro"), ` · ${dataRelativa(review.dataCriacao)}`);
+    // Resenha que avaliou um filme: o nome do livro leva ao duelo Livro vs. Filme.
+    const nomeLivro = review.idAdaptacao ? el("a", "", review.titulo) : el("b", "", review.titulo || "um livro");
+    if (review.idAdaptacao) nomeLivro.href = `/paginas/adaptacao.html?id=${review.idAdaptacao}`;
+    linha.append(nomeLivro, ` · ${dataRelativa(review.dataCriacao)}`);
     quem.append(el("strong", "", review.nomeUsuario), linha);
     topo.append(criarAvatar(review.nomeUsuario, review.avatarUsuario), quem);
 
@@ -1132,8 +1174,13 @@ function criarLugarPodio(item, posicao) {
     nota.append(el("strong", "", formatarMedia(item.mediaFidelidade)), criarEstrelas(item.mediaFidelidade),
         el("small", "", `fidelidade · ${item.totalAvaliacoes} ${item.totalAvaliacoes === 1 ? "avaliação" : "avaliações"}`));
 
+    const titulo = el("h3");
+    const link = el("a", "duelo-link", item.tituloFilme);
+    link.href = `/paginas/adaptacao.html?id=${item.idAdaptacoes}`;
+    titulo.appendChild(link);
+    lugar.classList.add("duelo-clicavel");
     lugar.append(imagens,
-        el("h3", "", item.tituloFilme),
+        titulo,
         el("p", "podio-sub", `do livro de ${item.autorLivro}`),
         nota,
         el("div", "podio-degrau"));
