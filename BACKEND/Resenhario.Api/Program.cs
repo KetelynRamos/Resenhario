@@ -54,16 +54,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-// CORS: só é necessário se o front for aberto em outra porta (ex.: Live Server).
-// Servido pelo wwwroot, o front está na mesma origem da API e não depende disso.
-builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
-    policy.WithOrigins(
-            "http://localhost:5500", "http://127.0.0.1:5500",
-            "http://localhost:5501", "http://127.0.0.1:5501",
-            "http://localhost:5502", "http://127.0.0.1:5502")
-        .AllowAnyHeader()
-        .AllowAnyMethod()));
-
 // Documento OpenAPI (/openapi/v1.json), lido pela tela do Swagger.
 // O transformer registra o esquema "Bearer" para o botão Authorize aceitar o token JWT.
 builder.Services.AddOpenApi(options => options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -129,7 +119,6 @@ app.UseHttpsRedirection();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseCors("Frontend");
 // Ordem importa: primeiro descobre QUEM é o usuário (token), depois verifica se ele PODE acessar.
 app.UseAuthentication();
 app.UseAuthorization();

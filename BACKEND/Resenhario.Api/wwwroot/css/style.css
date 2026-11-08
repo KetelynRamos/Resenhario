@@ -209,7 +209,6 @@ select { cursor: pointer; }
 }
 .busca input { border: 0; background: transparent; padding: 10px 14px; }
 .busca input:focus { box-shadow: none; }
-.busca-fonte { margin-top: 10px; color: var(--texto-apagado); font-size: .82rem; }
 .mensagem { min-height: 1.4em; margin: 14px 0; color: var(--texto-suave); font-size: .9rem; }
 
 /* 6. Cards de obra e capas ------------------------------------------- */
@@ -380,10 +379,8 @@ select { cursor: pointer; }
 .aviso.saindo { opacity: 0; transform: translateX(20px); }
 @keyframes entrar { from { opacity: 0; transform: translateY(12px); } }
 
-/* Linhas simples de texto (listas provisórias) */
+/* Lista vertical simples (ex.: posições do ranking) */
 .lista { display: grid; gap: 12px; }
-.linha-adaptacao { padding: 14px 16px; border: 1px solid var(--borda); border-radius: var(--raio-pequeno); background: var(--painel); }
-
 
 /* 8. Rodapé ---------------------------------------------------------- */
 footer {
@@ -442,7 +439,6 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .aba-login { background: transparent; color: var(--texto-suave); padding: 10px; }
 .aba-login:hover { background: rgba(255, 255, 255, .05); box-shadow: none; transform: none; }
 .aba-login.ativa { background: var(--ambar); color: #1a1205; }
-.conectado { display: grid; gap: 14px; justify-items: start; margin-top: 18px; }
 
 /* Perfil -------------------------------------------------------------------- */
 .perfil-topo { display: flex; align-items: center; gap: clamp(20px, 4vw, 36px); margin-bottom: 36px; }

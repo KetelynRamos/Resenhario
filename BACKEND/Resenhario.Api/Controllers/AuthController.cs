@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -86,30 +85,10 @@ public class AuthController : ControllerBase
         if (usuario is null || string.IsNullOrWhiteSpace(usuario.SenhaHash))
             return Unauthorized("E-mail ou senha incorretos.");
 
-        var senhaValida = false;
         // Verify aplica o BCrypt à senha digitada e compara com o hash salvo.
+        var senhaValida = false;
         try { senhaValida = BCrypt.Net.BCrypt.Verify(dados.Senha, usuario.SenhaHash); }
-        catch (Exception) { /* Hash antigo, fictício ou inválido: tentar o verificador legado abaixo. */ }
-
-        // Compatibilidade com contas criadas pela versão anterior do projeto:
-        // quando o hash antigo for validado, ele é atualizado para BCrypt no mesmo login.
-        if (!senhaValida)
-        {
-            try
-            {
-                var resultadoAntigo = new PasswordHasher<Usuario>().VerifyHashedPassword(usuario, usuario.SenhaHash, dados.Senha);
-                senhaValida = resultadoAntigo is PasswordVerificationResult.Success or PasswordVerificationResult.SuccessRehashNeeded;
-                if (senhaValida)
-                {
-                    usuario.SenhaHash = BCrypt.Net.BCrypt.HashPassword(dados.Senha);
-                    await _context.SaveChangesAsync();
-                }
-            }
-            catch (Exception)
-            {
-                senhaValida = false;
-            }
-        }
+        catch (BCrypt.Net.SaltParseException) { /* hash inválido no banco (ex.: dados de teste antigos): senha errada */ }
 
         if (!senhaValida) return Unauthorized("E-mail ou senha incorretos.");
         return Ok(CriarResposta(usuario));

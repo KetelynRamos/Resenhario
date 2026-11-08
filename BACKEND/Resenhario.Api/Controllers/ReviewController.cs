@@ -20,13 +20,6 @@ public class ReviewController : ControllerBase
         string? CapaUrl, string? PosterUrl, int? AnoFilme, double? MediaNotaLivro, int TotalResenhasLivro,
         string? AvatarUsuario, int TotalCurtidas, bool CurtidoPorMim, int TotalComentarios);
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<ReviewResposta>>> GetReviews()
-    {
-        var resultado = await ConsultarReviews(1, 100, "recentes", null, null);
-        return Ok(resultado.Itens);
-    }
-
     // GET /api/Review/5 → 200 com a resenha ou 404
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Review>> GetReview(int id)
