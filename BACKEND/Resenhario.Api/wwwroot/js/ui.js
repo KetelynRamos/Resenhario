@@ -176,6 +176,21 @@ function criarAvatar(nome, url) {
     return avatar;
 }
 
+// ----- Ícones em SVG (traço simples, no lugar de emojis) -------------
+const ICONES = {
+    coracao: '<path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/>',
+    balao: '<path d="M4 5h16v11H9l-5 4z"/>',
+    compartilhar: '<path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/>'
+};
+
+function criarIcone(nome) {
+    const span = el("span", "icone");
+    span.setAttribute("aria-hidden", "true");
+    // Os desenhos são textos fixos do próprio código (não vêm do usuário), por isso o innerHTML é seguro aqui.
+    span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONES[nome]}</svg>`;
+    return span;
+}
+
 // ----- Seletor de estrelas (formulário de resenha) -------------------
 // São 5 radio buttons (um por nota) estilizados como estrelas. Ficam em ordem
 // invertida (5 → 1) para o CSS conseguir "acender" as estrelas anteriores com o seletor ~.
