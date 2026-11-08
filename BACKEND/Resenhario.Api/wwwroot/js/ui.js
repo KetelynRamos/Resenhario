@@ -28,10 +28,17 @@ function configurarCabecalho() {
         if (new URL(link.href).pathname === atual) link.classList.add("ativo");
     });
 
-    // Troca "Entrar" pelo primeiro nome de quem está logado.
+    atualizarLinkConta();
+}
+
+// Para quem está logado, "Entrar" vira o avatar + "Olá, Nome" e leva ao perfil.
+function atualizarLinkConta() {
     const usuario = usuarioAtual();
     const linkConta = document.querySelector("#menu .link-conta");
-    if (usuario && linkConta) linkConta.textContent = `Olá, ${usuario.nome.split(" ")[0]}`;
+    if (!usuario || !linkConta) return;
+    linkConta.href = "/paginas/perfil.html";
+    linkConta.replaceChildren(criarAvatar(usuario.nome, usuario.avatar), document.createTextNode(`Olá, ${usuario.nome.split(" ")[0]}`));
+    if (location.pathname === "/paginas/perfil.html") linkConta.classList.add("ativo");
 }
 
 // ----- Avisos (toasts): substituem o alert() -----------------------
@@ -151,8 +158,16 @@ function dataRelativa(dataIso) {
     return "agora mesmo";
 }
 
-// Avatar com as iniciais do nome e uma cor própria para cada pessoa.
-function criarAvatar(nome) {
+// Avatar da pessoa: a imagem escolhida (avatar pronto ou foto) ou, sem imagem,
+// as iniciais do nome com uma cor própria para cada pessoa.
+function criarAvatar(nome, url) {
+    if (url) {
+        const img = el("img", "avatar avatar-foto");
+        img.src = url;
+        img.alt = "";
+        img.onerror = () => img.replaceWith(criarAvatar(nome)); // se a imagem falhar, volta para as iniciais
+        return img;
+    }
     const partes = (nome || "?").trim().split(/\s+/);
     const iniciais = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
     const avatar = el("span", "avatar", iniciais);

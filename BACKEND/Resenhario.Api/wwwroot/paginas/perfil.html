@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu perfil · Resenhário</title>
+    <meta name="description" content="Seu perfil no Resenhário.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230b0a08'/><text x='50' y='76' text-anchor='middle' font-family='Impact,Arial Narrow,sans-serif' font-size='74' fill='%23f2b33d'>R</text></svg>">
+    <!-- Tipografia: Bebas Neue (títulos, letra de cartaz de cinema) + Inter (texto). Sem internet, cai para fontes do sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="topo">
+        <a class="marca" href="/index.html">Resenhário</a>
+        <button class="menu-botao" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>
+        <nav id="menu" aria-label="Navegação principal">
+            <a href="/index.html">Início</a>
+            <a href="/paginas/livros.html">Livros</a>
+            <a href="/paginas/filmes.html">Filmes</a>
+            <a href="/paginas/feed.html">Feed</a>
+            <a href="/paginas/ranking.html">Ranking</a>
+            <a href="/paginas/reviews.html">Resenhar</a>
+            <a href="/paginas/estante.html">Minha estante</a>
+            <a class="link-conta" href="/paginas/login.html">Entrar</a>
+        </nav>
+    </header>
+
+    <main id="perfil" class="pagina pagina-perfil">
+        <section class="perfil-topo">
+            <div id="perfil-avatar" class="perfil-avatar"></div>
+            <div class="perfil-identidade">
+                <p class="sobretitulo" id="perfil-desde">Na sessão</p>
+                <h1 id="perfil-nome">Meu perfil</h1>
+                <p id="perfil-bio" class="perfil-bio"></p>
+                <ul id="perfil-numeros" class="perfil-numeros"></ul>
+            </div>
+        </section>
+
+        <div class="perfil-grade">
+            <section class="painel">
+                <h2>Seu jeito</h2>
+                <form id="form-perfil">
+                    <div class="campo"><label for="perfil-campo-nome">Nome</label><input id="perfil-campo-nome" type="text" required maxlength="150" autocomplete="name"></div>
+                    <div class="campo"><label for="perfil-campo-bio">Uma frase sobre você</label><textarea id="perfil-campo-bio" maxlength="280" rows="3" placeholder="Ex.: Leio o livro antes do trailer sair."></textarea><small id="contador-bio" class="contador">0/280</small></div>
+                    <div class="campo"><label for="perfil-campo-favorito">Livro favorito</label><input id="perfil-campo-favorito" type="text" maxlength="200" list="lista-livros-perfil" placeholder="Qual livro você indicaria pra todo mundo?"><datalist id="lista-livros-perfil"></datalist></div>
+                    <button type="submit">Salvar</button>
+                </form>
+            </section>
+
+            <section class="painel">
+                <h2>Seu avatar</h2>
+                <div id="avatares" class="avatares" role="radiogroup" aria-label="Escolha um avatar"></div>
+                <div class="avatar-acoes">
+                    <label class="botao botao-fantasma" for="foto-avatar">Enviar uma foto</label>
+                    <input id="foto-avatar" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
+                    <button id="remover-avatar" type="button" class="botao botao-fantasma">Usar só as iniciais</button>
+                </div>
+            </section>
+        </div>
+
+        <details class="accordion">
+            <summary>Conta</summary>
+            <div class="accordion-conteudo">
+                <p class="texto-suave">Você entra com <strong id="perfil-email"></strong></p>
+                <button id="sair-conta" type="button" class="botao botao-fantasma">Sair da conta</button>
+            </div>
+        </details>
+    </main>
+
+    <footer>
+        <p><strong>Resenhário</strong> · O filme acabou. A história continua no livro.</p>
+        <p class="credito">Dados de filmes fornecidos pelo TMDB. Este site não é endossado nem certificado pelo TMDB.</p>
+    </footer>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

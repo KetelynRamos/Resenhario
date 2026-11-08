@@ -321,6 +321,12 @@ select { cursor: pointer; }
     border: 2px solid hsl(var(--matiz), 50%, 45%);
 }
 
+/* Avatar com imagem (avatar pronto ou foto enviada) */
+.avatar-foto { object-fit: cover; background: var(--painel-2); border-color: var(--borda-forte); }
+/* Link da conta no menu: mini avatar + "Olá, Nome" */
+#menu a.link-conta { display: inline-flex; align-items: center; gap: 8px; }
+#menu a.link-conta .avatar { width: 26px; height: 26px; font-size: .62rem; border-width: 1px; }
+
 /* 7. Carregamento, vazio e avisos ------------------------------------ */
 .skeleton {
     border-radius: var(--raio-pequeno);
@@ -437,6 +443,43 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .aba-login:hover { background: rgba(255, 255, 255, .05); box-shadow: none; transform: none; }
 .aba-login.ativa { background: var(--ambar); color: #1a1205; }
 .conectado { display: grid; gap: 14px; justify-items: start; margin-top: 18px; }
+
+/* Perfil -------------------------------------------------------------------- */
+.perfil-topo { display: flex; align-items: center; gap: clamp(20px, 4vw, 36px); margin-bottom: 36px; }
+.perfil-avatar .avatar { width: clamp(96px, 14vw, 140px); height: clamp(96px, 14vw, 140px); font-size: 2.4rem; border-width: 3px; box-shadow: var(--brilho-ambar); }
+.perfil-identidade { display: grid; gap: 8px; min-width: 0; }
+.perfil-identidade h1 { overflow-wrap: anywhere; }
+.perfil-bio { color: var(--texto-suave); font-size: 1.05rem; max-width: 620px; }
+.perfil-bio.vazio { font-style: italic; color: var(--texto-apagado); }
+.perfil-numeros { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.perfil-numeros li { display: flex; align-items: baseline; gap: 6px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--borda); background: var(--painel); color: var(--texto-suave); font-size: .85rem; }
+.perfil-numeros strong { color: var(--ambar); font: 400 1.3rem var(--fonte-titulo); letter-spacing: .03em; }
+.perfil-grade { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); gap: 22px; align-items: start; }
+.perfil-grade h2 { margin-bottom: 18px; }
+.avatares { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.avatar-opcao { padding: 0; aspect-ratio: 1; border-radius: 50%; overflow: hidden; background: transparent; border: 3px solid transparent; }
+.avatar-opcao img { width: 100%; height: 100%; }
+.avatar-opcao:hover { background: transparent; border-color: var(--borda-forte); box-shadow: none; }
+.avatar-opcao[aria-checked="true"] { border-color: var(--ambar); box-shadow: 0 0 0 3px rgba(242, 179, 61, .25); }
+.avatar-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.avatar-acoes .botao { cursor: pointer; }
+
+/* Accordion nativo do HTML (<details>/<summary>): abre e fecha sem JavaScript */
+.accordion { margin-top: 22px; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--painel); }
+.accordion summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 22px;
+    cursor: pointer;
+    list-style: none;
+    font: 400 1.5rem var(--fonte-titulo);
+    letter-spacing: .03em;
+}
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary::after { content: "+"; color: var(--ambar); font-size: 1.6rem; transition: transform var(--transicao); }
+.accordion[open] summary::after { transform: rotate(45deg); }
+.accordion-conteudo { display: grid; gap: 14px; justify-items: start; padding: 0 22px 22px; }
 
 /* Utilitários e layouts de página ------------------------------------- */
 /* Esconde visualmente, mas mantém para leitores de tela. */
@@ -777,6 +820,7 @@ fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 
 /* Responsivo: celular ------------------------------------------------- */
 @media (max-width: 860px) {
+    .perfil-grade { grid-template-columns: 1fr; }
     /* Login no celular: marca compacta em cima, formulário embaixo */
     .login-layout { grid-template-columns: 1fr; min-height: 0; gap: 20px; }
     .login-colagem, .login-pontos { display: none; }
@@ -827,6 +871,7 @@ fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 }
 @media (max-width: 560px) {
     .pagina { padding-top: 32px; }
+    .perfil-topo { flex-direction: column; align-items: flex-start; }
     .grade-obras { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 14px; }
     .busca { flex-direction: column; border-radius: var(--raio); }
     .busca .botao, .busca button { width: 100%; }

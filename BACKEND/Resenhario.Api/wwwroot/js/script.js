@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarPaginaFilmes();
     iniciarPaginaSeries();
     iniciarLogin();
+    iniciarPerfil();
     iniciarEstante();
     iniciarResenhas();
     iniciarFeed();
@@ -313,15 +314,12 @@ function iniciarLogin() {
     if (!form) return;
     const abas = document.querySelectorAll(".aba-login");
     const camposCadastro = document.getElementById("campos-cadastro");
-    const conectado = document.getElementById("conectado");
     let modoCadastro = location.hash === "#cadastro";
 
+    // Quem já está logado não precisa desta tela: vai direto para o perfil.
+    if (usuarioAtual()) { location.replace("/paginas/perfil.html"); return; }
+
     const render = () => {
-        const usuario = usuarioAtual();
-        form.hidden = !!usuario;
-        document.querySelector(".abas-login").hidden = !!usuario;
-        conectado.hidden = !usuario;
-        if (usuario) document.getElementById("conectado-nome").textContent = usuario.nome;
         camposCadastro.hidden = !modoCadastro;
         document.getElementById("nome").required = modoCadastro;
         form.querySelector('button[type="submit"]').textContent = modoCadastro ? "Criar minha conta" : "Entrar";
@@ -333,7 +331,6 @@ function iniciarLogin() {
     };
     abas.forEach(aba => aba.addEventListener("click", () => { modoCadastro = aba.dataset.modo === "cadastro"; render(); }));
     montarColagemLogin();
-    document.getElementById("sair-conta").addEventListener("click", () => { sair(); avisar("Você saiu da conta."); render(); });
     render();
 
     form.addEventListener("submit", async e => {
@@ -345,12 +342,148 @@ function iniciarLogin() {
         try {
             const usuario = await api(modoCadastro ? "/Auth/cadastro" : "/Auth/login", { method: "POST", body: JSON.stringify(dados) });
             localStorage.setItem(SESSION_KEY, JSON.stringify(usuario));
+            // Guarda também o avatar, para o menu já aparecer com a foto.
+            try { atualizarSessao({ avatar: (await api("/Usuario/me")).avatar }); } catch { /* sem avatar, ficam as iniciais */ }
             avisar(modoCadastro ? "Conta criada! Bem-vindo(a) ao Resenhário." : `Bem-vindo(a) de volta, ${usuario.nome.split(" ")[0]}!`);
             setTimeout(() => location.href = "/index.html", 700);
         } catch (err) {
             avisar(err.message || "Não foi possível entrar.", "erro");
             botao.disabled = false;
         }
+    });
+}
+
+// ---------------------------------------------------------------------
+// Meu perfil: dados, avatar e o accordion "Conta" com o Sair
+// ---------------------------------------------------------------------
+const AVATARES_PRONTOS = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `/img/avatares/avatar-${n}.svg`);
+
+async function iniciarPerfil() {
+    if (!document.getElementById("perfil")) return;
+    if (!usuarioAtual()) { location.replace("/paginas/login.html"); return; }
+
+    let perfil;
+    try {
+        perfil = await api("/Usuario/me");
+    } catch (e) {
+        avisar(e.message, "erro");
+        return;
+    }
+    const form = document.getElementById("form-perfil");
+    const campoNome = document.getElementById("perfil-campo-nome");
+    const campoBio = document.getElementById("perfil-campo-bio");
+    const campoFavorito = document.getElementById("perfil-campo-favorito");
+    const contadorBio = document.getElementById("contador-bio");
+
+    campoNome.value = perfil.nome;
+    campoBio.value = perfil.bio || "";
+    campoFavorito.value = perfil.livroFavorito || "";
+    contadorBio.textContent = `${campoBio.value.length}/280`;
+    campoBio.addEventListener("input", () => contadorBio.textContent = `${campoBio.value.length}/280`);
+    document.getElementById("perfil-email").textContent = perfil.email;
+    renderizarTopoPerfil(perfil);
+    renderizarEscolhaAvatar(perfil);
+
+    // Sugestões de livros do catálogo no campo "Livro favorito".
+    api("/Livro").then(livros => document.getElementById("lista-livros-perfil")
+        .replaceChildren(...livros.map(l => new Option(l.titulo)))).catch(() => {});
+
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        const dados = { nome: campoNome.value.trim(), bio: campoBio.value.trim() || null, livroFavorito: campoFavorito.value.trim() || null };
+        try {
+            await api("/Usuario/me", { method: "PUT", body: JSON.stringify(dados) });
+            Object.assign(perfil, dados);
+            atualizarSessao({ nome: dados.nome });
+            renderizarTopoPerfil(perfil);
+            atualizarLinkConta();
+            avisar("Perfil atualizado.");
+        } catch (err) { avisar(err.message, "erro"); }
+    });
+
+    // Foto enviada: reduzida no navegador antes de ir para o servidor.
+    document.getElementById("foto-avatar").addEventListener("change", async e => {
+        const arquivo = e.target.files[0];
+        e.target.value = "";
+        if (!arquivo) return;
+        try {
+            await salvarAvatar(perfil, await reduzirFoto(arquivo));
+            avisar("Foto atualizada.");
+        } catch (err) { avisar(err.message || "Não deu para usar essa foto. Tenta outra.", "erro"); }
+    });
+    document.getElementById("remover-avatar").addEventListener("click", async () => {
+        try { await salvarAvatar(perfil, null); avisar("Agora seu avatar são suas iniciais."); }
+        catch (err) { avisar(err.message, "erro"); }
+    });
+    document.getElementById("sair-conta").addEventListener("click", () => {
+        sair();
+        location.href = "/index.html";
+    });
+}
+
+function renderizarTopoPerfil(perfil) {
+    document.getElementById("perfil-avatar").replaceChildren(criarAvatar(perfil.nome, perfil.avatar));
+    document.getElementById("perfil-nome").textContent = perfil.nome;
+    document.getElementById("perfil-bio").textContent = perfil.bio || "Conte em uma frase quem você é na sessão.";
+    document.getElementById("perfil-bio").classList.toggle("vazio", !perfil.bio);
+    const desde = new Date(perfil.dataCadastro + (perfil.dataCadastro.endsWith("Z") ? "" : "Z"));
+    document.getElementById("perfil-desde").textContent = `Na sessão desde ${desde.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
+    const numeros = [[perfil.totalResenhas, perfil.totalResenhas === 1 ? "resenha" : "resenhas"],
+        [perfil.curtidasRecebidas, perfil.curtidasRecebidas === 1 ? "curtida recebida" : "curtidas recebidas"]];
+    if (perfil.livroFavorito) numeros.push(["Favorito", perfil.livroFavorito]);
+    document.getElementById("perfil-numeros").replaceChildren(...numeros.map(([valor, rotulo]) => {
+        const item = el("li");
+        item.append(el("strong", "", String(valor)), el("span", "", rotulo));
+        return item;
+    }));
+}
+
+function renderizarEscolhaAvatar(perfil) {
+    const area = document.getElementById("avatares");
+    area.replaceChildren(...AVATARES_PRONTOS.map((url, i) => {
+        const botao = el("button", "avatar-opcao");
+        botao.type = "button";
+        botao.setAttribute("role", "radio");
+        botao.setAttribute("aria-checked", String(perfil.avatar === url));
+        botao.setAttribute("aria-label", `Avatar ${i + 1}`);
+        const img = el("img");
+        img.src = url;
+        img.alt = "";
+        botao.appendChild(img);
+        botao.addEventListener("click", async () => {
+            try { await salvarAvatar(perfil, url); avisar("Avatar atualizado."); }
+            catch (err) { avisar(err.message, "erro"); }
+        });
+        return botao;
+    }));
+}
+
+async function salvarAvatar(perfil, avatar) {
+    await api("/Usuario/me/avatar", { method: "PUT", body: JSON.stringify({ avatar }) });
+    // Foto enviada: o endereço público muda a cada foto (para o navegador não usar a antiga).
+    perfil.avatar = avatar && avatar.startsWith("data:") ? `/api/Usuario/${perfil.idUsuario}/avatar?v=${avatar.length}` : avatar;
+    atualizarSessao({ avatar: perfil.avatar });
+    renderizarTopoPerfil(perfil);
+    renderizarEscolhaAvatar(perfil);
+    atualizarLinkConta();
+}
+
+// Recorta a foto no centro em formato quadrado e reduz para 256 px (JPEG),
+// deixando o arquivo pequeno (algumas dezenas de KB) antes de enviar.
+function reduzirFoto(arquivo) {
+    return new Promise((resolve, reject) => {
+        if (!arquivo.type.startsWith("image/")) return reject(new Error("Escolha um arquivo de imagem."));
+        const img = new Image();
+        img.onload = () => {
+            const lado = Math.min(img.width, img.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = 256;
+            canvas.getContext("2d").drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256);
+            URL.revokeObjectURL(img.src);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.onerror = () => reject(new Error("Não deu para abrir essa imagem. Tenta outra."));
+        img.src = URL.createObjectURL(arquivo);
     });
 }
 
