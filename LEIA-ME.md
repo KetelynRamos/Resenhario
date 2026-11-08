@@ -118,7 +118,7 @@ BACKEND/Resenhario.Api/
 ├── Controllers/    API REST ([ApiController], rotas api/[controller])
 ├── Models/         Classes do domínio (Livro, Filme, Adaptacao, Review, Estante, Usuario) com Data Annotations
 ├── Data/           AppDbContext (EF Core), SeedData e SeedImagens
-├── Services/       ConferenciaAdaptacao: confere no TMDB se o filme é adaptação do livro
+├── Services/       ConferenciaAdaptacao (confere no TMDB se o filme é adaptação do livro) e UsuarioLogado (ID de quem está logado)
 ├── wwwroot/        Front-end: index.html, paginas/, css/style.css, js/ (api.js, ui.js, catalogo.js, resenhas.js e paginas/ com um arquivo por página), lib/ (Chart.js)
 ├── Program.cs      Configuração: EF Core, JWT, HttpClientFactory, Swagger, erros globais, seed, /api/saude
 └── appsettings*.json
@@ -143,4 +143,4 @@ docs/               Auditoria, roteiro da demo e documentação técnica
 | Busca de filmes: "integração TMDB não configurada" | Falta o `Tmdb:ReadAccessToken` (seção 3). |
 | Busca de livros: "Google Books respondeu com HTTP 429" | Cota pública esgotada: configure `GoogleBooks:ApiKey`. Os livros já salvos continuam aparecendo. |
 | Capas desenhadas em vez das imagens reais | O seed de imagens ainda não rodou com internet e chaves (seção 5). |
-| Gráficos da estante não aparecem | Sem internet o Chart.js é carregado da cópia em `wwwroot/lib`; recarregue a página (Ctrl+F5). |
+| Gráficos da estante não aparecem | O Chart.js vem do arquivo `wwwroot/lib/chart.umd.min.js` (não depende de internet); recarregue a página (Ctrl+F5). |

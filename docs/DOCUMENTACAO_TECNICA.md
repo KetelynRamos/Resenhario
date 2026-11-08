@@ -32,7 +32,7 @@ O usuário pode:
 | APIs externas | Google Books API, TMDB API (via `IHttpClientFactory`) |
 | Segurança | BCrypt.Net-Next, JWT Bearer, `[Authorize]`, `dotnet user-secrets` |
 | Documentação da API | OpenAPI + **Swagger UI** (`/swagger`) |
-| Gráficos | Chart.js 4.4.1 (CDN, com cópia local em `wwwroot/lib`) |
+| Gráficos | Chart.js 4.4.1 (arquivo local em `wwwroot/lib`, funciona sem internet) |
 
 > **Por que EF Core 9 num projeto .NET 10?** O provedor de MySQL que usamos (Pomelo) ainda não tem versão para o EF Core 10. O EF Core 9 roda normalmente no .NET 10.
 
@@ -90,7 +90,7 @@ BACKEND/Resenhario.Api/
 ├── Models/             Classes do domínio + Data Annotations
 │   └── Externos/       DTOs da Google Books API e da TMDB API
 ├── Data/               AppDbContext, SeedData (dados de demonstração), SeedImagens (capas e pôsteres)
-├── Services/           ConferenciaAdaptacao (confere no TMDB se o filme veio do livro)
+├── Services/           ConferenciaAdaptacao (confere no TMDB se o filme veio do livro), UsuarioLogado (ID de quem está logado, lido do token)
 ├── wwwroot/            Front-end: index.html, paginas/, css/style.css, js/, lib/chart.umd.min.js
 ├── Program.cs          Serviços, middlewares, rotas, seed e /api/saude
 ├── appsettings.json    Configurações sem segredos (segredos ficam em user-secrets)
@@ -243,7 +243,6 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 |---|---|---|---|
 | GET | `/api/Livro` | Catálogo em ordem alfabética | **200** |
 | GET | `/api/Livro/{id}` | Um livro | **200**, 404 |
-| GET | `/api/Livro/{id}/medias` | Média da nota do livro e fidelidade de cada adaptação | **200**, 404 |
 | GET | `/api/Livro/buscar?q=` | Busca na **Google Books API** | **200**, 400, 502, 504 |
 | GET | `/api/Livro/{id}/adaptacoes-sugeridas` | Filmes do **TMDB** baseados no livro (mesmo autor original), indicando se já estão no catálogo e vinculados | **200**, 404, 502, 503, 504 |
 | POST 🔒 | `/api/Livro` | Adiciona ao catálogo | **201**, 400, 409 (já existe) |
@@ -287,7 +286,6 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | GET | `/api/Review/feed?pagina=1&tamanho=10&ordem=curtidas&idAdaptacao=5` | Feed paginado com capa, pôster, média da comunidade, avatar do autor, curtidas e comentários. `ordem`: `recentes` ou `curtidas`; filtros opcionais `idAdaptacao` e `idLivro` | **200** |
 | GET | `/api/Review/{id}` | Uma resenha | **200**, 404 |
 | POST 🔒 | `/api/Review` | Publica resenha com avaliação dupla | **201**, 400 |
-| DELETE 🔒 | `/api/Review/{id}` | Remove a própria resenha | **204**, 404 |
 
 ### Comunidade: curtidas e comentários
 

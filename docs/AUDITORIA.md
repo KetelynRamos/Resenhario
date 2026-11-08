@@ -226,5 +226,6 @@
 | Limpeza: Séries (TVmaze) removidas do código (a tabela `Series` continua no banco, sem uso) | ✅ | `4d21604` |
 | Limpeza: código sem uso (`GET /api/Review`, CORS, verificação de senha antiga, 3 classes CSS) | ✅ | `2e94cd5` |
 | Limpeza: `script.js` dividido em um arquivo por página (`js/paginas/`) | ✅ | `bf5f14a` |
+| Limpeza 2: rotas sem uso (`/api/Livro/{id}/medias`, `DELETE /api/Review/{id}`, endereços duplicados do catálogo externo), validações repetidas, `UsuarioLogado` em um só lugar, Chart.js local | ✅ | branch `limpeza-2` |
 
 Riscos resolvidos: R1, R3 (seed), R6, R7, R8, R9 (documentado), R10, R11, R12, R14. Em aberto: **R2** (banco na nuvem, ação da equipe), **R4/R5** (configurar as chaves do Google Books e do TMDB), R13 (os scripts SQL continuam sem `SET NAMES utf8mb4`; no Workbench isso não costuma causar problema).

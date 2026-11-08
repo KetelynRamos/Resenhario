@@ -128,7 +128,7 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 | **TMDB fora** | Mesmo procedimento: vincular O Pequeno Príncipe ao filme de 2015 já salvo. |
 | **Banco do Aiven não responde** (`/api/saude` com "sem conexão") | Ver o `motivo`. Serviço desligado → *Power on* no console do Aiven (leva alguns minutos). Sem tempo: trocar para o banco local. |
 | **API não sobe** | Conferir `dotnet --version` (precisa ser 10.x) e usar `dotnet run --launch-profile http`. |
-| **Gráficos não aparecem** | Ctrl+F5 (o Chart.js tem cópia local em `wwwroot/lib`). |
+| **Gráficos não aparecem** | Ctrl+F5 (o Chart.js é um arquivo do próprio site, em `wwwroot/lib`). |
 | **Nada funciona** | Plano C: passar o **vídeo gravado na véspera** e narrar por cima. |
 
 ### Trocar para o banco local (2 minutos)
