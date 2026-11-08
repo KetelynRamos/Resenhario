@@ -119,7 +119,7 @@ async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false)
         const resposta = await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro, idFilme, vincularMesmoAssim }) });
         aviso.hidden = true;
         avisar(resposta?.situacao === "confirmada"
-            ? "Duelo aberto! O TMDB confirma que o filme veio deste livro."
+            ? "Duelo aberto! E sim: o filme veio mesmo deste livro."
             : "Duelo aberto! Agora é com a galera.");
         await iniciarVinculoAdaptacoes(true);
         return true;
@@ -151,7 +151,7 @@ async function procurarAdaptacoes(idLivro) {
         if (!sugestoes.length) {
             msg.textContent = "";
             mostrarEstadoVazio(area, { titulo: "Nenhuma adaptação encontrada",
-                texto: `O TMDB não tem filme baseado em “${livro?.titulo ?? "este livro"}”${livro?.autor ? `, de ${livro.autor}` : ""}. Se existir uma adaptação com outro nome, ela pode ser ligada em “Já sabe qual é o filme?”.` });
+                texto: `Não encontramos filme baseado em “${livro?.titulo ?? "este livro"}”${livro?.autor ? `, de ${livro.autor}` : ""}. Se existir uma adaptação com outro nome, ela pode ser ligada em “Já sabe qual é o filme?”.` });
             return;
         }
         msg.textContent = sugestoes.length === 1 ? "Achamos 1 filme baseado neste livro:" : `Achamos ${sugestoes.length} filmes baseados neste livro:`;

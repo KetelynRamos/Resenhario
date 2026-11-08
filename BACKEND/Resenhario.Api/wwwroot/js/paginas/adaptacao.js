@@ -36,8 +36,8 @@ async function mostrarSeloConferencia(id) {
         const conferencia = await api(`/Adaptacao/${id}/conferencia`);
         if (conferencia.situacao === "nao-conferida") return;
         selo.textContent = conferencia.situacao === "confirmada"
-            ? `Adaptação confirmada pelo TMDB · baseada na obra de ${conferencia.autoresOriginais.join(", ")}`
-            : "Atenção: o TMDB não confirma que este filme veio deste livro";
+            ? `Adaptação confirmada · baseada na obra de ${conferencia.autoresOriginais.join(", ")}`
+            : "Atenção: não encontramos sinal de que este filme veio deste livro";
         selo.className = `selo-conferencia ${conferencia.situacao}`;
         selo.hidden = false;
     } catch { /* sem selo */ }

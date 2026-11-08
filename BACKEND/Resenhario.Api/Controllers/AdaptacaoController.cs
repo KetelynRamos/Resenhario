@@ -167,11 +167,11 @@ public class AdaptacaoController : ControllerBase
 
         var autores = ConferenciaAdaptacao.AutoresOriginais(creditos);
         if (ConferenciaAdaptacao.AutorConfere(livro.Autor, autores))
-            return new ConferenciaResposta("confirmada", autores, $"O TMDB confirma: o filme é baseado na obra de {string.Join(", ", autores)}.");
+            return new ConferenciaResposta("confirmada", autores, $"Confirmado: o filme é baseado na obra de {string.Join(", ", autores)}.");
 
         var mensagem = autores.Count == 0
-            ? $"O TMDB não indica que “{filme.Titulo}” seja baseado em um livro."
-            : $"Pelo TMDB, “{filme.Titulo}” é baseado na obra de {string.Join(", ", autores)}, e não de {livro.Autor}.";
+            ? $"Não encontramos sinal de que “{filme.Titulo}” seja baseado em um livro."
+            : $"Pelo que encontramos, “{filme.Titulo}” é baseado na obra de {string.Join(", ", autores)}, e não de {livro.Autor}.";
         return new ConferenciaResposta("nao-confere", autores, mensagem);
     }
 
