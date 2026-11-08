@@ -122,7 +122,13 @@ app.UseHttpsRedirection();
 // O front (HTML, CSS e JS) fica em wwwroot/ e é servido pela própria API:
 // abrir http://localhost:5131 carrega o wwwroot/index.html.
 app.UseDefaultFiles();
-app.UseStaticFiles();
+// "no-cache": o navegador pode guardar os arquivos, mas confere com o servidor antes de usar.
+// Sem isso, depois de publicar uma versão nova, o navegador podia misturar o HTML novo
+// com o CSS/JS antigos guardados (e um botão novo ficava sem função).
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = arquivo => arquivo.Context.Response.Headers.CacheControl = "no-cache"
+});
 
 // Ordem importa: primeiro descobre QUEM é o usuário (token), depois verifica se ele PODE acessar.
 app.UseAuthentication();

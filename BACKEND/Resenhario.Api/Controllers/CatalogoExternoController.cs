@@ -137,8 +137,8 @@ public class CatalogoExternoController : ControllerBase
 
         try
         {
-            // Títulos como "Duna: edição especial" → pesquisa só "Duna".
-            var titulo = livro.Titulo.Split(':')[0].Trim();
+            // Títulos como "Duna: edição especial" ou "Coraline (Edição de bolso)" → pesquisa só "Duna" / "Coraline".
+            var titulo = livro.Titulo.Split(':', '(')[0].Trim();
             var achados = await PesquisarNoTmdbAsync(titulo, cancellationToken);
             if (achados is null) return TmdbRespondeuComErro();
 
