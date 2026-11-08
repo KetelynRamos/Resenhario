@@ -45,41 +45,26 @@ async function salvarFilme(filme, botao, catalogo) {
         botao.textContent = "No catálogo";
         avisar(`“${filme.titulo}” foi salvo no catálogo.`);
         await carregarFilmesEm(catalogo, true);
-        await iniciarVinculoAdaptacoes(true);
+        await carregarListasDoVinculo();
     } catch (e) {
         botao.disabled = false; botao.textContent = "Tentar novamente";
         avisar(e.message, "erro");
     }
 }
 
-let vinculoConfigurado = false;
 let livrosDoCatalogo = [];   // para mostrar título e autor nas mensagens
 let ultimaTentativa = null; // livro e filme do último vínculo tentado (para o "Vincular mesmo assim")
 
-async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
-    const form = document.getElementById("form-vincular-adaptacao");
-    const lista = document.getElementById("lista-adaptacoes");
-    if (!form || !lista) return;
+// Painel "Esse livro virou filme?": liga os botões uma vez e carrega as listas.
+async function iniciarVinculoAdaptacoes() {
     const livroSelect = document.getElementById("adaptacao-livro"), filmeSelect = document.getElementById("adaptacao-filme");
-    // Ao recarregar as listas, mantém o livro que já estava escolhido.
-    const livroEscolhido = livroSelect.value || new URLSearchParams(location.search).get("livro");
 
-    try {
-        const [livros, filmes, adaptacoes] = await Promise.all([api("/Livro"), api("/Filme"), api("/Adaptacao")]);
-        livrosDoCatalogo = livros;
-        preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
-        preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
-        if (livroEscolhido && livros.some(l => String(l.idLivros) === String(livroEscolhido))) livroSelect.value = livroEscolhido;
-        renderizarAdaptacoes(lista, adaptacoes);
-    } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar os duelos", texto: e.message });
-    }
-
-    if (somenteRecarregar || vinculoConfigurado) return;
-    vinculoConfigurado = true;
-
+    document.getElementById("form-procurar-adaptacoes").addEventListener("submit", e => {
+        e.preventDefault();
+        procurarAdaptacoes(Number(livroSelect.value));
+    });
     // Vínculo à mão: usa o livro escolhido em cima e o filme escolhido aqui.
-    form.addEventListener("submit", e => {
+    document.getElementById("form-vincular-adaptacao").addEventListener("submit", e => {
         e.preventDefault();
         if (!livroSelect.value) {
             avisar("Escolha o livro primeiro.", "erro");
@@ -88,28 +73,41 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
         }
         vincularLivroEFilme(Number(livroSelect.value), Number(filmeSelect.value));
     });
-    // Aviso do TMDB: a pessoa decide se troca o filme ou vincula mesmo assim.
+    // Aviso de vínculo duvidoso: a pessoa decide se troca o filme ou vincula mesmo assim.
     document.getElementById("cancelar-vinculo").addEventListener("click", () => {
         document.getElementById("aviso-vinculo").hidden = true;
         filmeSelect.focus();
     });
     document.getElementById("vincular-mesmo-assim").addEventListener("click", () =>
         vincularLivroEFilme(ultimaTentativa.idLivro, ultimaTentativa.idFilme, true));
-    document.getElementById("form-procurar-adaptacoes").addEventListener("submit", e => {
-        e.preventDefault();
-        procurarAdaptacoes(Number(livroSelect.value));
-    });
     livroSelect.addEventListener("change", () => {
         document.getElementById("aviso-vinculo").hidden = true;
         document.getElementById("sugestoes-adaptacao").replaceChildren();
         document.getElementById("mensagem-sugestoes").textContent = "";
     });
 
-    // Veio da página Livros ("Virou filme?"): já procura as adaptações do livro.
+    // Veio da página Livros ("Virou filme?"): já escolhe o livro e procura as adaptações.
+    await carregarListasDoVinculo(new URLSearchParams(location.search).get("livro"));
     if (livroSelect.value) procurarAdaptacoes(Number(livroSelect.value));
 }
 
-// Cria o vínculo. A API confere no TMDB: se o filme não veio deste livro, responde 409
+// (Re)carrega os livros e filmes dos selects e os duelos abertos, mantendo o livro escolhido.
+async function carregarListasDoVinculo(livroEscolhido = document.getElementById("adaptacao-livro").value) {
+    const livroSelect = document.getElementById("adaptacao-livro"), filmeSelect = document.getElementById("adaptacao-filme");
+    const lista = document.getElementById("lista-adaptacoes");
+    try {
+        const [livros, filmes, adaptacoes] = await Promise.all([api("/Livro"), api("/Filme"), api("/Adaptacao")]);
+        livrosDoCatalogo = livros;
+        preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
+        preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
+        if (livros.some(l => String(l.idLivros) === String(livroEscolhido))) livroSelect.value = livroEscolhido;
+        renderizarAdaptacoes(lista, adaptacoes);
+    } catch (e) {
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar os duelos", texto: e.message });
+    }
+}
+
+// Cria o vínculo. A API confere se o filme veio do livro: se o filme não veio deste livro, responde 409
 // com precisaConfirmar = true e mostramos o aviso, em vez de vincular direto.
 async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false) {
     if (!exigirLogin()) return false;
@@ -121,7 +119,7 @@ async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false)
         avisar(resposta?.situacao === "confirmada"
             ? "Duelo aberto! E sim: o filme veio mesmo deste livro."
             : "Duelo aberto! Agora é com a galera.");
-        await iniciarVinculoAdaptacoes(true);
+        await carregarListasDoVinculo();
         return true;
     } catch (err) {
         if (err.dados?.precisaConfirmar) {

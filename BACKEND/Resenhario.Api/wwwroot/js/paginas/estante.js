@@ -16,6 +16,8 @@ const graficos = {};
 // Filtros da prateleira: Todos, cada status de leitura ou só filmes.
 let filtroEstante = "todos";
 
+const ESTANTE_VAZIA = { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } };
+
 async function iniciarEstante() {
     const area = document.getElementById("itens-estante");
     if (!area) return;
@@ -32,7 +34,7 @@ async function iniciarEstante() {
         renderizarEstatisticasLeitura(itens);
         configurarFiltrosEstante(area);
         if (!itens.length) {
-            mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            mostrarEstadoVazio(area, ESTANTE_VAZIA);
             return;
         }
         area.replaceChildren(...itens.map(item => cardEstante(item, itens, area)));
@@ -78,7 +80,7 @@ function cardEstante(item, itens, area) {
             card.remove();
             renderizarEstatisticasLeitura(itens);
             avisar("Item removido da estante.");
-            if (!itens.length) mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            if (!itens.length) mostrarEstadoVazio(area, ESTANTE_VAZIA);
         } catch (err) { remover.disabled = false; avisar(err.message, "erro"); }
     });
     acoes.append(select, remover);
@@ -115,13 +117,15 @@ function renderizarEstatisticasLeitura(itens) {
     renderizarGraficos(livros);
 }
 
-async function renderizarGraficos(livros) {
+// O Chart.js vem do arquivo wwwroot/lib/chart.umd.min.js (carregado no estante.html).
+function renderizarGraficos(livros) {
     const canvasStatus = document.getElementById("grafico-status");
-    if (!canvasStatus) return;
-    if (!await carregarChartJs()) {
-        document.getElementById("graficos").replaceChildren(el("p", "mensagem", "Os gráficos não puderam ser carregados agora; os números acima continuam valendo."));
-        return;
-    }
+    if (!canvasStatus || !window.Chart) return;
+    // Visual dos gráficos combinando com o tema escuro do site.
+    Chart.defaults.color = "#b3a998";
+    Chart.defaults.borderColor = "rgba(255, 255, 255, .07)";
+    Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
 
     // 1) Rosca: quantos livros em cada status.
     const cores = ["#ffd27a", "#f2b33d", "#6cc38a", "#a3202f"];
@@ -164,9 +168,6 @@ async function renderizarGraficos(livros) {
 }
 
 // ----- Desafio de leitura: quantos livros ler nos próximos 6 meses -----
-
-// A API devolve datas em UTC sem o "Z"; acrescentamos para o navegador entender o fuso.
-function dataDaApi(iso) { return new Date(/[zZ]$/.test(iso) ? iso : iso + "Z"); }
 
 // Livros marcados como "Lido" a partir de uma data (dataAtualizacao = quando virou "Lido").
 function livrosLidosDesde(itens, inicio) {
