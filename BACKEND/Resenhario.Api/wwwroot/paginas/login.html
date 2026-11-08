@@ -29,26 +29,37 @@
     </header>
 
     <main class="pagina pagina-login">
-        <section class="painel cartao-login">
-            <p class="sobretitulo">Sua estante de livros e filmes</p>
-            <h1>Bem-vindo(a) ao Resenhário</h1>
-            <p class="texto-suave">Monte sua estante, avalie adaptações e participe do feed da comunidade.</p>
-            <div class="abas-login" role="group" aria-label="Escolha entre entrar ou criar conta">
-                <button type="button" class="aba-login" data-modo="login">Entrar</button>
-                <button type="button" class="aba-login" data-modo="cadastro">Criar conta</button>
-            </div>
-            <form id="form-login">
-                <div id="campos-cadastro" class="campo" hidden><label for="nome">Nome</label><input id="nome" type="text" autocomplete="name" placeholder="Como quer ser chamado(a)"></div>
-                <div class="campo"><label for="email">E-mail</label><input id="email" type="email" required autocomplete="email" placeholder="voce@email.com"></div>
-                <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" required minlength="8" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"><small>Sua senha é guardada com hash BCrypt: ninguém consegue lê-la, nem a equipe.</small></div>
-                <button type="submit">Entrar</button>
-            </form>
-            <div id="conectado" class="conectado" hidden>
-                <p>Você está conectado como <strong id="conectado-nome"></strong>.</p>
-                <a class="botao" href="/paginas/estante.html">Ir para minha estante</a>
-                <button id="sair-conta" type="button" class="botao botao-fantasma">Sair da conta</button>
-            </div>
-        </section>
+        <div class="login-layout">
+            <section class="login-marca">
+                <p class="login-logo">Resenhário</p>
+                <h1>O filme acabou. <em>A história continua no livro.</em></h1>
+                <div id="login-colagem" class="login-colagem" aria-hidden="true"></div>
+                <ul class="login-pontos">
+                    <li><strong>Descubra</strong> o livro por trás do filme que você amou.</li>
+                    <li><strong>Avalie</strong> se a adaptação fez jus e compare com a galera.</li>
+                    <li><strong>Monte</strong> sua estante e bata sua meta de leitura.</li>
+                </ul>
+            </section>
+            <section class="painel cartao-login">
+                <h2 id="titulo-login">Bora pra sessão</h2>
+                <p class="texto-suave" id="subtitulo-login">Entre para avaliar, montar sua estante e conversar com a galera.</p>
+                <div class="abas-login" role="group" aria-label="Escolha entre entrar ou criar conta">
+                    <button type="button" class="aba-login" data-modo="login">Entrar</button>
+                    <button type="button" class="aba-login" data-modo="cadastro">Criar conta</button>
+                </div>
+                <form id="form-login">
+                    <div id="campos-cadastro" class="campo" hidden><label for="nome">Nome</label><input id="nome" type="text" autocomplete="name" placeholder="Como quer ser chamado(a)"></div>
+                    <div class="campo"><label for="email">E-mail</label><input id="email" type="email" required autocomplete="email" placeholder="voce@email.com"></div>
+                    <div class="campo"><label for="senha">Senha</label><input id="senha" type="password" required minlength="8" autocomplete="current-password" placeholder="Mínimo de 8 caracteres"></div>
+                    <button type="submit">Entrar</button>
+                </form>
+                <div id="conectado" class="conectado" hidden>
+                    <p>Você está conectado como <strong id="conectado-nome"></strong>.</p>
+                    <a class="botao" href="/paginas/estante.html">Ir para minha estante</a>
+                    <button id="sair-conta" type="button" class="botao botao-fantasma">Sair da conta</button>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer>

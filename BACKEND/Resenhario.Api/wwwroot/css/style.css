@@ -391,10 +391,47 @@ footer p + p { margin-top: 6px; }
 footer strong { color: var(--ambar); font: 400 1.15rem var(--fonte-titulo); letter-spacing: .05em; }
 footer .credito { font-size: .75rem; opacity: .8; }
 
-/* Login ---------------------------------------------------------------- */
-.pagina-login { display: grid; place-items: center; }
-.cartao-login { width: min(460px, 100%); }
-.cartao-login h1 { font-size: 2rem; margin: 8px 0 6px; }
+/* Login: marca e colagem à esquerda, formulário à direita ------------------- */
+.pagina-login { padding-top: 32px; }
+.login-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+    align-items: center;
+    gap: clamp(28px, 5vw, 72px);
+    min-height: min(720px, calc(100vh - 180px));
+}
+.login-marca {
+    position: relative;
+    display: grid;
+    gap: 22px;
+    padding: clamp(28px, 4vw, 48px);
+    border-radius: var(--raio);
+    overflow: hidden;
+    background:
+        conic-gradient(from 200deg at 100% 0%, transparent 0deg, rgba(255, 210, 122, .14) 18deg, transparent 42deg),
+        radial-gradient(70% 90% at 0% 100%, rgba(163, 32, 47, .28), transparent 70%),
+        linear-gradient(160deg, var(--painel-2), var(--fundo-elevado));
+    border: 1px solid var(--borda);
+}
+.login-logo { font: 400 clamp(3rem, 7vw, 5.4rem)/.9 var(--fonte-titulo); letter-spacing: .05em; color: var(--ambar); }
+.login-marca h1 { font-size: clamp(1.8rem, 3vw, 2.5rem); }
+.login-marca h1 em { font-style: normal; color: var(--texto-suave); display: block; }
+/* Pôsteres do pódio em leque, como cartazes na parede do cinema */
+.login-colagem { display: flex; justify-content: center; padding: 8px 0 4px; }
+.login-poster { width: clamp(90px, 11vw, 130px); aspect-ratio: 2 / 3; margin: 0 -14px; overflow: hidden; border-radius: 6px; border: 3px solid var(--fundo); box-shadow: var(--sombra); transition: transform var(--transicao); }
+.login-poster:nth-child(1) { transform: rotate(-9deg) translateY(10px); }
+.login-poster:nth-child(2) { transform: rotate(-3deg); z-index: 1; }
+.login-poster:nth-child(3) { transform: rotate(3deg); z-index: 1; }
+.login-poster:nth-child(4) { transform: rotate(9deg) translateY(10px); }
+.login-marca:hover .login-poster:nth-child(2) { transform: rotate(-3deg) translateY(-6px); }
+.login-marca:hover .login-poster:nth-child(3) { transform: rotate(3deg) translateY(-6px); }
+.login-poster .capa-placeholder { padding: 8px; }
+.login-poster .capa-placeholder-tipo { display: none; }
+.login-pontos { list-style: none; display: grid; gap: 10px; color: var(--texto-suave); }
+.login-pontos li { padding-left: 16px; border-left: 2px solid var(--ambar); }
+.login-pontos strong { color: var(--texto); }
+.cartao-login { width: 100%; max-width: 460px; justify-self: end; }
+.cartao-login h2 { margin-bottom: 6px; }
 .abas-login { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; margin: 22px 0; border-radius: 999px; background: var(--fundo-elevado); border: 1px solid var(--borda); }
 .aba-login { background: transparent; color: var(--texto-suave); padding: 10px; }
 .aba-login:hover { background: rgba(255, 255, 255, .05); box-shadow: none; transform: none; }
@@ -740,6 +777,11 @@ fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
 
 /* Responsivo: celular ------------------------------------------------- */
 @media (max-width: 860px) {
+    /* Login no celular: marca compacta em cima, formulário embaixo */
+    .login-layout { grid-template-columns: 1fr; min-height: 0; gap: 20px; }
+    .login-colagem, .login-pontos { display: none; }
+    .login-marca { gap: 10px; padding: 24px; }
+    .cartao-login { justify-self: stretch; max-width: none; }
     .graficos { grid-template-columns: 1fr; }
     .hero-grade { grid-template-columns: 1fr; }
     .convite { flex-direction: column; align-items: flex-start; }

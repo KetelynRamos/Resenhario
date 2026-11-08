@@ -325,9 +325,14 @@ function iniciarLogin() {
         camposCadastro.hidden = !modoCadastro;
         document.getElementById("nome").required = modoCadastro;
         form.querySelector('button[type="submit"]').textContent = modoCadastro ? "Criar minha conta" : "Entrar";
+        document.getElementById("titulo-login").textContent = modoCadastro ? "Bem-vindo(a) à sessão" : "Bora pra sessão";
+        document.getElementById("subtitulo-login").textContent = modoCadastro
+            ? "Leva menos de um minuto. Depois é só escolher o primeiro livro."
+            : "Entre para avaliar, montar sua estante e conversar com a galera.";
         abas.forEach(aba => aba.classList.toggle("ativa", (aba.dataset.modo === "cadastro") === modoCadastro));
     };
     abas.forEach(aba => aba.addEventListener("click", () => { modoCadastro = aba.dataset.modo === "cadastro"; render(); }));
+    montarColagemLogin();
     document.getElementById("sair-conta").addEventListener("click", () => { sair(); avisar("Você saiu da conta."); render(); });
     render();
 
@@ -347,6 +352,20 @@ function iniciarLogin() {
             botao.disabled = false;
         }
     });
+}
+
+// Colagem de pôsteres ao lado do login: os filmes do pódio do Top do Resenhário.
+async function montarColagemLogin() {
+    const colagem = document.getElementById("login-colagem");
+    if (!colagem) return;
+    try {
+        const ranking = (await api("/Adaptacao/ranking")).slice(0, 4);
+        colagem.replaceChildren(...ranking.map(item => {
+            const quadro = el("div", "login-poster");
+            quadro.appendChild(criarCapa(item.posterUrl, item.tituloFilme, "Filme"));
+            return quadro;
+        }));
+    } catch { colagem.hidden = true; } // sem pôsteres, o lado esquerdo continua com o texto
 }
 
 // ---------------------------------------------------------------------
