@@ -70,10 +70,12 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 4. Filme no TMDB e vínculo Livro ↔ Filme (2:15–3:15)
 
-**Fazer:** menu **Filmes** → pesquisar `Coraline` → no filme de **2009** (Henry Selick), clicar em **Adicionar ao catálogo** → em **Ligar livro e adaptação**, escolher Livro **Coraline** e Filme **Coraline (2009)** → **Vincular**. O novo card "Livro vs. Filme" aparece em *Adaptações vinculadas*.
+**Fazer:** ainda em **Livros**, no card de **Coraline**, clicar em **Virou filme?** → a página **Filmes** abre com o livro já escolhido e mostra o filme de **2009** (Henry Selick) com "Baseado na obra de Neil Gaiman" → clicar em **Abrir o duelo**. O aviso diz que o TMDB confirmou, e o card "Livro vs. Filme" aparece em *Duelos abertos*.
+
+**Mostrar o erro evitado (se der tempo):** no formulário, escolher Livro **Coraline** e Filme **Duna (2021)** → **Abrir o duelo** → aparece o aviso *"Pelo TMDB, Duna é baseado na obra de Frank Herbert, e não de Neil Gaiman"* → clicar em **Escolher outro filme**.
 
 **Falar:**
-> "O TMDB nos dá o pôster e o diretor. O token do TMDB fica só no servidor, guardado com user-secrets, fora do GitHub. A tabela Adaptacoes liga um livro a um filme, e um mesmo livro pode ter várias adaptações, como Duna, que tem a versão de 1984 e a de 2021."
+> "O usuário não precisa saber se o livro virou filme: o sistema procura no TMDB os filmes cujo autor original é o autor do livro. E se alguém tentar ligar um livro a um filme errado, a API confere e avisa antes. O token do TMDB fica só no servidor, fora do GitHub. A tabela Adaptacoes liga um livro a um filme, e um mesmo livro pode ter várias adaptações, como Duna, que tem a versão de 1984 e a de 2021."
 
 **Se der errado:** TMDB fora → vincular **O Pequeno Príncipe** ao filme de 2015 já salvo (plano B). Se nem isso: mostrar o card de **Duna** já vinculado e seguir.
 

@@ -118,6 +118,7 @@ BACKEND/Resenhario.Api/
 ├── Controllers/    API REST ([ApiController], rotas api/[controller])
 ├── Models/         Classes do domínio (Livro, Filme, Adaptacao, Review, Estante, Usuario) com Data Annotations
 ├── Data/           AppDbContext (EF Core), SeedData e SeedImagens
+├── Services/       ConferenciaAdaptacao: confere no TMDB se o filme é adaptação do livro
 ├── wwwroot/        Front-end: index.html, paginas/, css/style.css, js/ (api.js, ui.js, catalogo.js, resenhas.js e paginas/ com um arquivo por página), lib/ (Chart.js)
 ├── Program.cs      Configuração: EF Core, JWT, HttpClientFactory, Swagger, erros globais, seed, /api/saude
 └── appsettings*.json
