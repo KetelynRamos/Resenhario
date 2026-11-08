@@ -17,12 +17,13 @@ public class ReviewController : ControllerBase
     public record ReviewResposta(int IdReviews, int IdUsuario, string NomeUsuario,
         int? IdLivro, string? Titulo, int? NotaLivro, string? Comentario, DateTime DataCriacao,
         int? IdAdaptacao, string? TituloFilme, int? NotaFidelidade,
-        string? CapaUrl, string? PosterUrl, int? AnoFilme, double? MediaNotaLivro, int TotalResenhasLivro);
+        string? CapaUrl, string? PosterUrl, int? AnoFilme, double? MediaNotaLivro, int TotalResenhasLivro,
+        string? AvatarUsuario, int TotalCurtidas, bool CurtidoPorMim, int TotalComentarios);
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ReviewResposta>>> GetReviews()
     {
-        var resultado = await ConsultarReviews(1, 100);
+        var resultado = await ConsultarReviews(1, 100, "recentes", null, null);
         return Ok(resultado.Itens);
     }
 
@@ -34,21 +35,34 @@ public class ReviewController : ControllerBase
         return review is null ? NotFound() : Ok(review);
     }
 
-    // GET /api/Review/feed?pagina=1&tamanho=10 → feed paginado (Skip/Take), mais recentes primeiro
+    // GET /api/Review/feed?pagina=1&tamanho=10&ordem=curtidas&idAdaptacao=3
+    //   ordem: "recentes" (padrão) ou "curtidas"; filtros opcionais por adaptação ou por livro.
     [HttpGet("feed")]
-    public async Task<IActionResult> Feed([FromQuery] int pagina = 1, [FromQuery] int tamanho = 10)
+    public async Task<IActionResult> Feed([FromQuery] int pagina = 1, [FromQuery] int tamanho = 10,
+        [FromQuery] string ordem = "recentes", [FromQuery] int? idAdaptacao = null, [FromQuery] int? idLivro = null)
     {
         pagina = Math.Max(1, pagina);
         tamanho = Math.Clamp(tamanho, 1, 30);
-        var resultado = await ConsultarReviews(pagina, tamanho);
+        var resultado = await ConsultarReviews(pagina, tamanho, ordem, idAdaptacao, idLivro);
         return Ok(new { pagina, tamanho, total = resultado.Total, totalPaginas = (int)Math.Ceiling(resultado.Total / (double)tamanho), itens = resultado.Itens });
     }
 
-    private async Task<(List<ReviewResposta> Itens, int Total)> ConsultarReviews(int pagina, int tamanho)
+    private async Task<(List<ReviewResposta> Itens, int Total)> ConsultarReviews(int pagina, int tamanho,
+        string ordem, int? idAdaptacao, int? idLivro)
     {
-        var total = await _context.Reviews.CountAsync();
-        var resultado = await _context.Reviews
-            .OrderByDescending(r => r.DataCriacao)
+        // Quem está vendo (0 se ninguém logado): serve para marcar as resenhas que ELA já curtiu.
+        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioLogado);
+
+        var consulta = _context.Reviews.AsQueryable();
+        if (idAdaptacao.HasValue) consulta = consulta.Where(r => r.IdAdaptacao == idAdaptacao);
+        if (idLivro.HasValue) consulta = consulta.Where(r => r.IdLivro == idLivro);
+
+        var total = await consulta.CountAsync();
+        consulta = ordem == "curtidas"
+            ? consulta.OrderByDescending(r => _context.Curtidas.Count(c => c.IdReview == r.IdReviews)).ThenByDescending(r => r.DataCriacao)
+            : consulta.OrderByDescending(r => r.DataCriacao);
+
+        var resultado = await consulta
             .Skip((pagina - 1) * tamanho)
             .Take(tamanho)
             .Select(r => new ReviewResposta(
@@ -72,7 +86,17 @@ public class ReviewController : ControllerBase
                     .Select(f => f.AnoLancamento).FirstOrDefault(),
                 // Média da comunidade para o livro: permite comparar a nota deste leitor com a dos outros.
                 _context.Reviews.Where(x => x.IdLivro == r.IdLivro && x.NotaLivro != null).Average(x => (double?)x.NotaLivro),
-                _context.Reviews.Count(x => x.IdLivro == r.IdLivro && x.NotaLivro != null)))
+                _context.Reviews.Count(x => x.IdLivro == r.IdLivro && x.NotaLivro != null),
+                // Avatar do autor: avatar pronto (caminho do arquivo) ou endereço da foto enviada.
+                _context.Usuarios.Where(u => u.IdUsuario == r.IdUsuario)
+                    .Select(u => u.Avatar == null ? null
+                        : u.Avatar.StartsWith("data:") ? "/api/Usuario/" + u.IdUsuario + "/avatar?v=" + u.Avatar.Length
+                        : u.Avatar)
+                    .FirstOrDefault(),
+                // Interações da comunidade
+                _context.Curtidas.Count(c => c.IdReview == r.IdReviews),
+                _context.Curtidas.Any(c => c.IdReview == r.IdReviews && c.IdUsuario == usuarioLogado),
+                _context.Comentarios.Count(c => c.IdReview == r.IdReviews)))
             .ToListAsync();
         return (resultado, total);
     }
