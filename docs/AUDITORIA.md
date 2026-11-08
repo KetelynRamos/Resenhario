@@ -223,5 +223,8 @@
 | P2-7: índices únicos (script 09) | ✅ (rodar no banco) | `9549da6` |
 | P2-8: documentação (`DOCUMENTACAO_TECNICA.md`, `GUIA_DEFESA.md`) | ✅ | `61476b4`, guia |
 | P2-9: comentários em português | ✅ | `71efad9` |
+| Limpeza: Séries (TVmaze) removidas do código (a tabela `Series` continua no banco, sem uso) | ✅ | `4d21604` |
+| Limpeza: código sem uso (`GET /api/Review`, CORS, verificação de senha antiga, 3 classes CSS) | ✅ | `2e94cd5` |
+| Limpeza: `script.js` dividido em um arquivo por página (`js/paginas/`) | ✅ | `bf5f14a` |
 
 Riscos resolvidos: R1, R3 (seed), R6, R7, R8, R9 (documentado), R10, R11, R12, R14. Em aberto: **R2** (banco na nuvem, ação da equipe), **R4/R5** (configurar as chaves do Google Books e do TMDB), R13 (os scripts SQL continuam sem `SET NAMES utf8mb4`; no Workbench isso não costuma causar problema).
