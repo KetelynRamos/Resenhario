@@ -51,8 +51,10 @@ async function api(caminho, opcoes = {}) {
     if (!resposta.ok) {
         const texto = await resposta.text();
         let mensagem = texto || `Erro HTTP ${resposta.status}`;
+        let dados = null;
         try {
             const json = JSON.parse(texto);
+            dados = json;
             // Erros de validação (Data Annotations) chegam como { errors: { campo: [mensagens] } }.
             const errosValidacao = json.errors ? Object.values(json.errors).flat() : [];
             mensagem = json.mensagem || errosValidacao.join(" ") || json.detail || json.title || json.message || texto;
@@ -62,7 +64,11 @@ async function api(caminho, opcoes = {}) {
             if (usuario?.token) sair();
             mensagem = "Sua sessão expirou ou você não entrou na conta. Faça login para continuar.";
         }
-        throw new Error(mensagem);
+        // O erro leva junto o status e o JSON da resposta (ex.: o aviso do TMDB no vínculo).
+        const erro = new Error(mensagem);
+        erro.status = resposta.status;
+        erro.dados = dados;
+        throw erro;
     }
     if (resposta.status === 204) return null;
     const texto = await resposta.text();

@@ -6,7 +6,11 @@
 function cardLivro(livro, comEstante) {
     return criarCardObra({
         titulo: livro.titulo, subtitulo: livro.autor, imagem: livro.capaUrl, tipo: "Livro",
-        acoes: comEstante ? [{ texto: "＋ Minha estante", acao: () => adicionarAEstante({ idLivros: livro.idLivros }) }] : []
+        acoes: comEstante ? [
+            { texto: "＋ Minha estante", acao: () => adicionarAEstante({ idLivros: livro.idLivros }) },
+            // Leva para Filmes com o livro já escolhido e as adaptações já procuradas.
+            { texto: "Virou filme?", secundario: true, acao: () => location.href = `/paginas/filmes.html?livro=${livro.idLivros}#vincular` }
+        ] : []
     });
 }
 
