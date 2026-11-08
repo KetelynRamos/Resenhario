@@ -90,6 +90,7 @@ BACKEND/Resenhario.Api/
 ├── Models/             Classes do domínio + Data Annotations
 │   └── Externos/       DTOs da Google Books API e da TMDB API
 ├── Data/               AppDbContext, SeedData (dados de demonstração), SeedImagens (capas e pôsteres)
+├── Services/           ConferenciaAdaptacao (confere no TMDB se o filme veio do livro)
 ├── wwwroot/            Front-end: index.html, paginas/, css/style.css, js/, lib/chart.umd.min.js
 ├── Program.cs          Serviços, middlewares, rotas, seed e /api/saude
 ├── appsettings.json    Configurações sem segredos (segredos ficam em user-secrets)
@@ -244,6 +245,7 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | GET | `/api/Livro/{id}` | Um livro | **200**, 404 |
 | GET | `/api/Livro/{id}/medias` | Média da nota do livro e fidelidade de cada adaptação | **200**, 404 |
 | GET | `/api/Livro/buscar?q=` | Busca na **Google Books API** | **200**, 400, 502, 504 |
+| GET | `/api/Livro/{id}/adaptacoes-sugeridas` | Filmes do **TMDB** baseados no livro (mesmo autor original), indicando se já estão no catálogo e vinculados | **200**, 404, 502, 503, 504 |
 | POST 🔒 | `/api/Livro` | Adiciona ao catálogo | **201**, 400, 409 (já existe) |
 | PUT 🔒 | `/api/Livro/{id}` | Atualiza | **204**, 400, 404 |
 | DELETE 🔒 | `/api/Livro/{id}` | Remove | **204**, 404, 409 (tem vínculos) |
@@ -264,7 +266,8 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | GET | `/api/Adaptacao` | Todas as adaptações com capa, pôster e médias | **200** |
 | GET | `/api/Adaptacao/{id}` | Uma adaptação com capa, pôster e médias (página do duelo) | **200**, 404 |
 | GET | `/api/Adaptacao/ranking` | Top 20 por fidelidade média (mínimo de 2 avaliações; desempate pela nota do livro) | **200** |
-| POST 🔒 | `/api/Adaptacao` | Vincula livro e filme | **201**, 400, 409 (já vinculado) |
+| GET | `/api/Adaptacao/{id}/conferencia` | O TMDB confirma que o filme é baseado no livro? (`confirmada`, `nao-confere` ou `nao-conferida`) | **200**, 404 |
+| POST 🔒 | `/api/Adaptacao` | Vincula livro e filme. Confere no TMDB se o autor original do filme é o autor do livro; se não for, responde 409 com `precisaConfirmar` e só vincula com `vincularMesmoAssim: true` | **201**, 400, 409 (já vinculado ou não confere) |
 | DELETE 🔒 | `/api/Adaptacao/{id}` | Remove o vínculo | **204**, 404, 409 (tem resenhas) |
 
 ### Estante virtual (todas 🔒)

@@ -51,7 +51,7 @@ Cada arquivo declara onde mora: `namespace Resenhario.Api.Models;`, `Resenhario.
 ```csharp
 public LivroController(AppDbContext context) => _context = context;
 ```
-**Explicação:** o controller **não cria** o banco; ele **recebe** o `AppDbContext` pronto pelo construtor. Quem entrega é o ASP.NET, que registramos no `Program.cs:29` (`AddDbContext`). Isso se chama **injeção de dependência**.
+**Explicação:** o controller **não cria** o banco; ele **recebe** o `AppDbContext` pronto pelo construtor. Quem entrega é o ASP.NET, que registramos no `Program.cs:34` (`AddDbContext`). Isso se chama **injeção de dependência**.
 
 ### Herança
 `Data/AppDbContext.cs:8`: `public class AppDbContext : DbContext`, e todos os controllers herdam de `ControllerBase`.
@@ -67,7 +67,7 @@ public LivroController(AppDbContext context) => _context = context;
 | **C**ontroller | `Controllers/` | `LivroController`: recebe a requisição, usa o Model e o banco, devolve a resposta |
 | **V**iew | `wwwroot/` | `paginas/livros.html` + `css/style.css` + `js/paginas/livros.js` |
 
-**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:120`, `app.UseStaticFiles()`).
+**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:125`, `app.UseStaticFiles()`).
 
 O front chama a API em um único lugar: `wwwroot/js/api.js:39` (função `api`) e `:46` (`fetch`). Exemplos de cada verbo: POST em `js/catalogo.js:56`, PUT em `js/paginas/estante.js:56`, DELETE em `js/paginas/estante.js:76`.
 
@@ -101,10 +101,10 @@ public class LivroController : ControllerBase
 | Dado inválido | qualquer | **400** automático (Data Annotations) | `Models/Livro.cs:18` |
 
 ### Swagger
-`Program.cs:113`: `app.UseSwaggerUI(...)` → `http://localhost:5131/swagger`. O botão **Authorize** aceita o token JWT para testar as rotas protegidas.
+`Program.cs:118`: `app.UseSwaggerUI(...)` → `http://localhost:5131/swagger`. O botão **Authorize** aceita o token JWT para testar as rotas protegidas.
 
 ### Minimal API
-`Program.cs:129`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
+`Program.cs:134`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
 
 ---
 
@@ -136,7 +136,7 @@ public class AppDbContext : DbContext
 **Explicação:** acessar o banco demora (rede + disco). Com `await`, o servidor **libera a thread** para atender outras pessoas enquanto espera a resposta, em vez de ficar parado. Por isso todos os métodos do `LivroController` são `async Task<...>` e usam as versões `...Async`.
 
 ### Consultas com JOIN e média (ranking)
-`Controllers/AdaptacaoController.cs:71-93`: `join` entre Adaptacoes, Livros e Filmes, `Average()` das notas de fidelidade, filtro `TotalAvaliacoes >= MinimoAvaliacoesRanking` (`:92`) e `OrderByDescending` (`:93`). O EF Core transforma tudo em **um único SQL** com `JOIN` e `AVG()`.
+`Controllers/AdaptacaoController.cs:82-104`: `join` entre Adaptacoes, Livros e Filmes, `Average()` das notas de fidelidade, filtro `TotalAvaliacoes >= MinimoAvaliacoesRanking` (`:103`) e `OrderByDescending` (`:104`). O EF Core transforma tudo em **um único SQL** com `JOIN` e `AVG()`.
 
 ### Banco e scripts
 O esquema é criado pelos scripts `BANCO DE DADOS/01`, `05`, `08` e `09` (não destrutivos). Escolhemos scripts em vez de *migrations* porque o banco já existia, criado pelo responsável de banco da equipe, e os scripts são fáceis de rodar no Workbench e no Aiven.
@@ -149,18 +149,30 @@ Tudo em `Controllers/CatalogoExternoController.cs`.
 
 | Conceito da aula | Onde | Explicação |
 |---|---|---|
-| **IHttpClientFactory** | registro em `Program.cs:18`; injetado em `:20`; `CreateClient` em `:44` | Reaproveita conexões. Criar `new HttpClient()` a cada chamada pode esgotar as portas do servidor. |
-| **GetAsync + await** | `:46` | Faz a chamada HTTP sem travar o servidor. |
-| **Desserialização para DTOs** | `:50` (`ReadFromJsonAsync<GoogleBooksResposta>`) e `:118` (TMDB) | O JSON vira objetos C#. Os DTOs estão em `Models/Externos/`. |
-| **API key fora do código** | `:41` (`GoogleBooks:ApiKey`) e `:100` (`Tmdb:ReadAccessToken`) | A chave é lida da configuração (user-secrets), nunca escrita no código nem enviada ao JavaScript. |
-| **try/catch HttpRequestException** | `:67` (Google) e `:144` (TMDB) | Se a API externa cair, respondemos **502** com mensagem e a tela mostra um aviso. |
-| Resposta inválida | `:71` (`JsonException`) | Se a API devolver algo que não é JSON, também vira 502 com mensagem. |
+| **IHttpClientFactory** | registro em `Program.cs:19`; injetado em `CatalogoExternoController.cs:25`; `CreateClient` em `:52` | Reaproveita conexões. Criar `new HttpClient()` a cada chamada pode esgotar as portas do servidor. |
+| **GetAsync + await** | `:53` | Faz a chamada HTTP sem travar o servidor. |
+| **Desserialização para DTOs** | `:58` (`ReadFromJsonAsync<GoogleBooksResposta>`) e `:189` (TMDB) | O JSON vira objetos C#. Os DTOs estão em `Models/Externos/`. |
+| **API key fora do código** | `:49` (`GoogleBooks:ApiKey`) e `Services/ConferenciaAdaptacao.cs:30` (`Tmdb:ReadAccessToken`) | A chave é lida da configuração (user-secrets), nunca escrita no código nem enviada ao JavaScript. |
+| **try/catch HttpRequestException** | `:75` (Google) e `:216` (TMDB, método `ErroDoTmdb`) | Se a API externa cair, respondemos **502** com mensagem e a tela mostra um aviso. |
+| Resposta inválida | `:79` (`JsonException`) | Se a API devolver algo que não é JSON, também vira 502 com mensagem. |
 
 ```csharp
 var client = _httpClientFactory.CreateClient("CatalogoExterno");
 using var response = await client.GetAsync(url, cancellationToken);
 var resposta = await response.Content.ReadFromJsonAsync<GoogleBooksResposta>(cancellationToken);
 ```
+
+### O filme veio mesmo deste livro? (conferência no TMDB)
+
+O vínculo livro ↔ filme é feito pelo usuário, então pode haver erro. Para evitar, o sistema **confere no TMDB**: os créditos de um filme (`/movie/{id}/credits`) trazem, além do diretor, quem escreveu a obra original (cargos como *Novel*, romance). A classe `Services/ConferenciaAdaptacao.cs` compara esse nome com o autor do livro.
+
+| O quê | Onde | Explicação |
+|---|---|---|
+| **Comparar autores** | `Services/ConferenciaAdaptacao.cs:75` (`AutorConfere`) | Compara pelo **sobrenome**, sem acento nem pontuação, porque cada fonte escreve o nome de um jeito ("J.K. Rowling" e "J. K. Rowling"). |
+| **Sugerir adaptações** | `CatalogoExternoController.cs:132` (`GET /api/Livro/{id}/adaptacoes-sugeridas`) | Pesquisa o título do livro no TMDB e fica só com os filmes cujo autor original é o autor do livro. O usuário não precisa saber de antemão que o livro virou filme. |
+| **Avisar antes de vincular** | `AdaptacaoController.cs:136` | Se o TMDB diz que o filme **não** veio do livro, a API responde **409** com o aviso; a tela pergunta e, se a pessoa confirmar, manda de novo com `VincularMesmoAssim = true`. Avisamos em vez de bloquear porque o TMDB às vezes está incompleto. |
+| **Selo na página do duelo** | `AdaptacaoController.cs:151` (`GET /api/Adaptacao/{id}/conferencia`) | "Adaptação confirmada pelo TMDB" ou um alerta. Sem token ou com o TMDB fora do ar, o selo não aparece e o resto funciona normal. |
+| **Injeção de dependência de uma classe nossa** | `Program.cs:27` (`AddScoped<ConferenciaAdaptacao>()`) | A mesma classe é usada por dois controllers; o ASP.NET entrega uma instância pelo construtor de cada um. |
 
 **DTO com nome diferente no JSON:** `Models/Externos/TmdbDtos.cs:17`: `[property: JsonPropertyName("poster_path")] string? PosterPath`. O TMDB usa `poster_path` (com sublinhado) e nós usamos `PosterPath`; o atributo liga os dois.
 
@@ -181,7 +193,7 @@ public int? NotaLivro { get; set; }
 **Explicação:** as regras ficam **em cima da propriedade**. Com `[ApiController]`, o ASP.NET valida **antes** de entrar no método e responde **400** com as mensagens. O front mostra essas mensagens (`wwwroot/js/api.js:57`).
 
 ### Tratamento global de erros
-`Program.cs:98`: `app.UseExceptionHandler(...)`. Qualquer exceção não tratada vira **500** com JSON `{ "mensagem": "Ocorreu um erro inesperado..." }`, sem expor o *stack trace* (detalhes internos) para o navegador. O detalhe continua no log do terminal.
+`Program.cs:103`: `app.UseExceptionHandler(...)`. Qualquer exceção não tratada vira **500** com JSON `{ "mensagem": "Ocorreu um erro inesperado..." }`, sem expor o *stack trace* (detalhes internos) para o navegador. O detalhe continua no log do terminal.
 
 ### Endpoints sensíveis protegidos
 `[Authorize]` na classe inteira da estante (`Controllers/EstanteController.cs:12`) e nas ações de escrita do catálogo (ex.: `Controllers/LivroController.cs:63` e `:81`). Sem token, a API responde **401**.
@@ -199,7 +211,7 @@ senhaValida = BCrypt.Net.BCrypt.Verify(dados.Senha, usuario.SenhaHash); // login
 **Explicação:** guardamos só o **hash**, algo como `$2a$11$Kq3...`. O `11` é o "custo": o BCrypt é lento de propósito, o que torna tentar milhões de senhas inviável. Cada hash tem um **sal** aleatório, então duas pessoas com a mesma senha têm hashes diferentes. Não existe "descriptografar": no login, o BCrypt aplica a mesma conta à senha digitada e compara.
 
 ### Token JWT
-`Controllers/AuthController.cs:108` (ID do usuário dentro do token) e `:115-116` (token com validade de 8 h); validação em `Program.cs:41`.
+`Controllers/AuthController.cs:108` (ID do usuário dentro do token) e `:115-116` (token com validade de 8 h); validação em `Program.cs:46`.
 **Explicação:** depois do login, a API entrega um "crachá" assinado (o token). O navegador manda esse crachá em cada requisição (`Authorization: Bearer ...`, em `wwwroot/js/api.js:42`). A API confere a **assinatura**: se alguém alterar o token, a assinatura não bate e a resposta é 401.
 
 ### Cada um mexe só no que é seu
@@ -258,10 +270,10 @@ Quando um livro vira "Lido", a estante guarda a data da mudança (`DataAtualizac
 
 | Recurso | Onde | Explicação curta |
 |---|---|---|
-| **JWT** | `AuthController`, `Program.cs:41` | "Crachá" assinado que prova quem é o usuário sem guardar sessão no servidor. |
-| **record** e `with` | `Models/Externos/*.cs`, `CatalogoExternoController.cs:134` | `record` é uma classe enxuta para carregar dados. `f with { Diretor = ... }` cria uma **cópia** mudando só um campo. |
-| **Task.WhenAll** | `CatalogoExternoController.cs:130` | Dispara as 12 buscas de diretor **ao mesmo tempo** e espera todas: a busca caiu de ~6 s para ~0,7 s no nosso teste. |
-| **LINQ com `join`** | `AdaptacaoController.cs:36` | Escrita parecida com SQL dentro do C#; o EF Core traduz para `JOIN`. |
+| **JWT** | `AuthController`, `Program.cs:46` | "Crachá" assinado que prova quem é o usuário sem guardar sessão no servidor. |
+| **record** e `with` | `Models/Externos/*.cs`, `CatalogoExternoController.cs:115` | `record` é uma classe enxuta para carregar dados. `f with { Diretor = ... }` cria uma **cópia** mudando só um campo. |
+| **Task.WhenAll** | `CatalogoExternoController.cs:199` | Dispara as 12 buscas de créditos (diretor e autor original) **ao mesmo tempo** e espera todas: a busca caiu de ~6 s para ~0,7 s no nosso teste. |
+| **LINQ com `join`** | `AdaptacaoController.cs:47` | Escrita parecida com SQL dentro do C#; o EF Core traduz para `JOIN`. |
 | **user-secrets** | `LEIA-ME.md`, seção 3 | Arquivo de configuração por usuário, fora da pasta do projeto, que não vai para o Git. |
 | **Seed idempotente** | `Data/SeedData.cs:171` e `:178` | Antes de inserir, confere se já existe (`AnyAsync`): rodar várias vezes não duplica. |
 | **`db.Livros.Local`** | `Data/SeedImagens.cs:104` | Olha os objetos já alterados na memória e ainda não salvos (o `SaveChanges` é só no fim). |
@@ -272,13 +284,13 @@ Quando um livro vira "Lido", a estante guarda a data da mudança (`DataAtualizac
 ## Perguntas prováveis do professor
 
 **1. Por que usar `IHttpClientFactory` em vez de `new HttpClient()`?**
-Cada `new HttpClient()` abre conexões novas, e as conexões antigas demoram para liberar a porta. Com muitas requisições, as portas do servidor podem acabar. A fábrica reaproveita as conexões e centraliza a configuração (timeout de 20 s, User-Agent) no `Program.cs:18`.
+Cada `new HttpClient()` abre conexões novas, e as conexões antigas demoram para liberar a porta. Com muitas requisições, as portas do servidor podem acabar. A fábrica reaproveita as conexões e centraliza a configuração (timeout de 20 s, User-Agent) no `Program.cs:19`.
 
 **2. Como a senha é guardada?**
 Só o hash BCrypt (`AuthController.cs:65`), com sal aleatório e custo 11. Nem a equipe consegue ver a senha. No login, `BCrypt.Verify` compara a senha digitada com o hash (`:90`).
 
 **3. O que acontece se o TMDB estiver fora do ar?**
-O `try/catch` captura a `HttpRequestException` e a API responde **502** com uma mensagem (`CatalogoExternoController.cs:144`). A tela mostra o aviso e o resto do site continua funcionando, porque os filmes já salvos vêm do **nosso** banco. Se o token não estiver configurado, a resposta é **503** com instruções. Na apresentação, mostramos isso ao vivo (`ROTEIRO_DEMO.md`).
+O `try/catch` captura a `HttpRequestException` e a API responde **502** com uma mensagem (`CatalogoExternoController.cs:216`). A tela mostra o aviso e o resto do site continua funcionando, porque os filmes já salvos vêm do **nosso** banco. Se o token não estiver configurado, a resposta é **503** com instruções. Na apresentação, mostramos isso ao vivo (`ROTEIRO_DEMO.md`).
 
 **4. Por que o PUT retorna 204?**
 204 é *No Content*: deu certo, mas não há nada novo para devolver, porque quem chamou já sabe o que mandou. Usamos o mesmo no DELETE.
@@ -305,7 +317,7 @@ O banco já existia e era mantido pelos scripts SQL do responsável de banco. Os
 No `dotnet user-secrets` de cada máquina, fora do repositório. O código só lê pelo nome (`_configuration["Tmdb:ReadAccessToken"]`). Verificamos o histórico do Git: nenhum segredo foi commitado.
 
 **12. Como é calculado o ranking? Por que precisa de 2 avaliações?**
-Média (`AVG`) das notas de fidelidade de cada adaptação, calculada na hora pelo banco. Com uma única nota 5, um filme ficaria acima de outro avaliado por muita gente, o que não é justo. Por isso exigimos pelo menos 2 avaliações (`AdaptacaoController.cs:18`). Em caso de empate, vence o livro com a maior média de notas.
+Média (`AVG`) das notas de fidelidade de cada adaptação, calculada na hora pelo banco. Com uma única nota 5, um filme ficaria acima de outro avaliado por muita gente, o que não é justo. Por isso exigimos pelo menos 2 avaliações (`AdaptacaoController.cs:20`). Em caso de empate, vence o livro com a maior média de notas.
 
 **13. O que é a "avaliação dupla"?**
 Cada resenha tem duas notas: a **qualidade do livro** (obrigatória) e a **fidelidade do filme** (opcional, só se a pessoa viu uma adaptação). A API confere que a adaptação escolhida é **daquele livro** (`ReviewController.cs:117`).
@@ -314,7 +326,7 @@ Cada resenha tem duas notas: a **qualidade do livro** (obrigatória) e a **fidel
 Data Annotations nos Models (`[Required]`, `[Range(1,5)]`…). Com `[ApiController]`, o ASP.NET valida antes do método e devolve **400** com as mensagens. Regras que dependem do banco (o livro existe? já está na estante?) ficam no controller.
 
 **15. E se acontecer um erro que ninguém previu?**
-O `UseExceptionHandler` (`Program.cs:98`) captura e responde 500 com uma mensagem amigável, sem mostrar detalhes internos. O erro completo fica no log.
+O `UseExceptionHandler` (`Program.cs:103`) captura e responde 500 com uma mensagem amigável, sem mostrar detalhes internos. O erro completo fica no log.
 
 **16. Por que o navegador não chama o Google Books direto?**
 Para proteger as chaves (elas ficariam visíveis no JavaScript), para tratar erros e limites num lugar só e para entregar ao front os dados já no formato que ele usa.
@@ -333,3 +345,7 @@ Não. Antes de inserir cada usuário, livro, filme, vínculo, resenha ou item de
 
 **21. Por que EF Core 9 se o projeto é .NET 10?**
 O provedor de MySQL que usamos (Pomelo) ainda não tem versão para o EF Core 10. O EF Core 9 roda normalmente no .NET 10.
+
+
+**22. E se o usuário vincular um livro a um filme que não é adaptação dele?**
+A API confere no TMDB quem escreveu a obra original do filme e compara com o autor do livro. Se não bater, responde 409 e a tela mostra o aviso antes de vincular. Para nem chegar nisso, o botão "Procurar adaptações deste livro" já sugere só os filmes que o TMDB diz serem baseados no livro (`Services/ConferenciaAdaptacao.cs`).

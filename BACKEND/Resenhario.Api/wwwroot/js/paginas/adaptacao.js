@@ -16,6 +16,7 @@ async function iniciarAdaptacao() {
         document.getElementById("adaptacao-subtitulo").textContent =
             `No cinema: ${item.tituloFilme}${item.anoLancamento ? ` (${item.anoLancamento})` : ""}${item.diretor ? `, de ${item.diretor}` : ""}.`;
         areaDuelo.replaceChildren(criarDuelo(item, true, true));
+        mostrarSeloConferencia(id);
         const avaliar = `/paginas/reviews.html?livro=${item.idLivro}&adaptacao=${item.idAdaptacoes}`;
         document.getElementById("adaptacao-avaliar").href = avaliar;
         await carregarResenhasEm(lista, { idAdaptacao: id, ordem: "curtidas", tamanho: 10,
@@ -25,6 +26,21 @@ async function iniciarAdaptacao() {
         lista.replaceChildren();
         mostrarEstadoVazio(areaDuelo, { erro: true, titulo: "Não achamos esse duelo", texto: "Ele pode ter sido removido. Que tal ver o Top do Resenhário?", botao: { texto: "Ver o Top", href: "/paginas/ranking.html" } });
     }
+}
+
+// Selo "confirmado pelo TMDB": a API confere se o filme é baseado neste livro.
+// Se não der para conferir (TMDB fora do ar), o selo simplesmente não aparece.
+async function mostrarSeloConferencia(id) {
+    const selo = document.getElementById("adaptacao-selo");
+    try {
+        const conferencia = await api(`/Adaptacao/${id}/conferencia`);
+        if (conferencia.situacao === "nao-conferida") return;
+        selo.textContent = conferencia.situacao === "confirmada"
+            ? `Adaptação confirmada pelo TMDB · baseada na obra de ${conferencia.autoresOriginais.join(", ")}`
+            : "Atenção: o TMDB não confirma que este filme veio deste livro";
+        selo.className = `selo-conferencia ${conferencia.situacao}`;
+        selo.hidden = false;
+    } catch { /* sem selo */ }
 }
 
 document.addEventListener("DOMContentLoaded", iniciarAdaptacao);

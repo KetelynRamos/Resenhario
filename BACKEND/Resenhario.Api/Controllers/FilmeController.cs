@@ -32,7 +32,7 @@ public class FilmeController : ControllerBase
         var titulo = filme.Titulo.Trim();
         var existente = await _context.Filmes.FirstOrDefaultAsync(f =>
             (!string.IsNullOrEmpty(f.TmdbId) && f.TmdbId == filme.TmdbId) ||
-            f.Titulo.ToLower() == titulo.ToLower());
+            (f.Titulo.ToLower() == titulo.ToLower() && f.AnoLancamento == filme.AnoLancamento)); // remakes têm o mesmo título
         if (existente != null) return Ok(existente);
         filme.Titulo = titulo;
         _context.Filmes.Add(filme);

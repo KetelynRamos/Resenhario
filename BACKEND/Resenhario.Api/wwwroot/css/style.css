@@ -502,6 +502,31 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .avatar-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .avatar-acoes .botao { cursor: pointer; }
 
+/* Vínculo livro + filme: aviso do TMDB, sugestões e selo de conferência */
+.aviso-vinculo {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 16px 18px;
+    border: 1px solid rgba(242, 179, 61, .45);
+    border-radius: var(--raio-pequeno);
+    background: rgba(242, 179, 61, .08);
+}
+.aviso-vinculo-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+.sugestoes-topo { margin-top: 22px; }
+#vincular { scroll-margin-top: 96px; } /* ao rolar até o painel, o título não fica atrás do cabeçalho fixo */
+.selo-conferencia {
+    display: inline-block;
+    margin: -12px 0 22px;
+    padding: 6px 14px;
+    border: 1px solid;
+    border-radius: 999px;
+    font-size: .85rem;
+    font-weight: 600;
+}
+.selo-conferencia.confirmada { color: var(--sucesso); border-color: rgba(108, 195, 138, .45); background: rgba(108, 195, 138, .08); }
+.selo-conferencia.nao-confere { color: var(--ambar); border-color: rgba(242, 179, 61, .45); background: rgba(242, 179, 61, .08); }
+
 /* Utilitários e layouts de página ------------------------------------- */
 /* Esconde visualmente, mas mantém para leitores de tela. */
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
