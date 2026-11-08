@@ -67,7 +67,7 @@ public LivroController(AppDbContext context) => _context = context;
 | **C**ontroller | `Controllers/` | `LivroController`: recebe a requisição, usa o Model e o banco, devolve a resposta |
 | **V**iew | `wwwroot/` | `paginas/livros.html` + `css/style.css` + `js/paginas/livros.js` |
 
-**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:125`, `app.UseStaticFiles()`).
+**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:128`, `app.UseStaticFiles()`).
 
 O front chama a API em um único lugar: `wwwroot/js/api.js:39` (função `api`) e `:46` (`fetch`). Exemplos de cada verbo: POST em `js/catalogo.js:56`, PUT em `js/paginas/estante.js:56`, DELETE em `js/paginas/estante.js:76`.
 
@@ -104,7 +104,7 @@ public class LivroController : ControllerBase
 `Program.cs:118`: `app.UseSwaggerUI(...)` → `http://localhost:5131/swagger`. O botão **Authorize** aceita o token JWT para testar as rotas protegidas.
 
 ### Minimal API
-`Program.cs:134`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
+`Program.cs:140`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
 
 ---
 
