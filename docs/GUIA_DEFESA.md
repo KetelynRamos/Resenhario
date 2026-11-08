@@ -220,7 +220,7 @@ Conexão do banco, token do TMDB e chave do Google ficam no **`dotnet user-secre
 | Chamadas à API | `wwwroot/js/api.js:39` | Uma função central que coloca o token, converte JSON e transforma erros em mensagens. |
 | Componentes reutilizáveis | `wwwroot/js/ui.js` (ex.: `criarDuelo` em `:305`) | O card "Livro vs. Filme" é montado por uma função usada na home, no ranking e em Filmes. |
 | Proteção contra XSS | `wwwroot/js/ui.js:12` (`textContent`) | Texto digitado por usuários nunca vira HTML executável. |
-| Gráficos | `wwwroot/js/ui.js:240` | Chart.js do CDN; se a internet falhar, carrega a cópia local em `wwwroot/lib`. |
+| Gráficos | `wwwroot/js/ui.js:264` | Chart.js do CDN; se a internet falhar, carrega a cópia local em `wwwroot/lib`. |
 | Responsivo | `wwwroot/css/style.css` (blocos `@media`) | Menu vira botão ☰ no celular; grades se reorganizam. |
 
 ---
@@ -233,10 +233,10 @@ Conexão do banco, token do TMDB e chave do Google ficam no **`dotnet user-secre
 | **"Eu já curti?"** | `Controllers/ReviewController.cs:91` | O feed é público, mas se a pessoa mandar o token, a API marca as resenhas que **ela** curtiu (`CurtidoPorMim`), e o coração aparece preenchido. |
 | **Curtida instantânea** | `wwwroot/js/resenhas.js:127` | O coração muda na hora e só depois a API confirma. Se a API recusar, a tela desfaz. Isso se chama "atualização otimista". |
 | **Comentários** | `Controllers/ComunidadeController.cs` | GET lista, POST cria (201), DELETE apaga, e só o autor apaga o próprio comentário (o ID vem do token). Com `ON DELETE CASCADE`, apagar uma resenha apaga as curtidas e os comentários dela. |
-| **Avatar** | `Controllers/UsuarioController.cs:21-23` (validação) e `:111` (servir a imagem) | Pode ser um dos 8 avatares prontos (arquivos SVG em `wwwroot/img/avatares`) ou uma foto. A foto é **recortada e reduzida no navegador** (`wwwroot/js/paginas/perfil.js:120`, com `<canvas>`) para 256 px antes de enviar, e fica no banco como texto base64. A rota `GET /api/Usuario/{id}/avatar` devolve a imagem para o feed. |
+| **Avatar** | `Controllers/UsuarioController.cs:21-23` (validação) e `:111` (servir a imagem) | Pode ser um dos 8 avatares prontos (arquivos SVG em `wwwroot/img/avatares`) ou uma foto. A foto é **recortada e reduzida no navegador** (`wwwroot/js/paginas/perfil.js:113`, com `<canvas>`) para 256 px antes de enviar, e fica no banco como texto base64. A rota `GET /api/Usuario/{id}/avatar` devolve a imagem para o feed. |
 | **Meta de leitura** | `Controllers/UsuarioController.cs:96` (salva) e `wwwroot/js/paginas/estante.js:176` (painel) | A pessoa escolhe quantos livros ler em 6 meses. Guardamos a meta e a data de início; o progresso conta os livros marcados como "Lido" depois dessa data (`paginas/estante.js:172`) e compara com os 6 meses anteriores. |
-| **Accordion "Conta"** | `wwwroot/paginas/perfil.html` | `<details>` e `<summary>` são tags do próprio HTML que abrem e fecham sozinhas, sem JavaScript. |
-| **Ícones sem emoji** | `wwwroot/js/ui.js:186` | Coração, balão e compartilhar são pequenos desenhos SVG escritos no código. |
+| **Menu "Olá, Nome"** (Meu perfil e Sair da conta) | `wwwroot/js/ui.js:43` | É um `<details>` com `<summary>`: tags do próprio HTML que abrem e fecham sozinhas ao clicar. O JavaScript só monta o menu quando a pessoa está logada e fecha ao clicar fora. |
+| **Ícones sem emoji** | `wwwroot/js/ui.js:210` | Coração, balão e compartilhar são pequenos desenhos SVG escritos no código. |
 
 **Perguntas prováveis sobre essa parte**
 

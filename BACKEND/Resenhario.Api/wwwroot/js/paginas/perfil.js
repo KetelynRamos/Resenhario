@@ -1,5 +1,5 @@
 // =====================================================================
-// perfil.js: Meu perfil: dados, avatar (pronto ou foto) e o accordion "Conta" com o Sair.
+// perfil.js: Meu perfil: dados, avatar (pronto ou foto). O "Sair da conta" fica no menu "Olá, Nome" (ui.js).
 // Depende de api.js (chamadas à API) e ui.js (componentes visuais).
 // =====================================================================
 
@@ -27,7 +27,6 @@ async function iniciarPerfil() {
     campoFavorito.value = perfil.livroFavorito || "";
     contadorBio.textContent = `${campoBio.value.length}/280`;
     campoBio.addEventListener("input", () => contadorBio.textContent = `${campoBio.value.length}/280`);
-    document.getElementById("perfil-email").textContent = perfil.email;
     renderizarTopoPerfil(perfil);
     renderizarEscolhaAvatar(perfil);
 
@@ -62,10 +61,6 @@ async function iniciarPerfil() {
         try { await salvarAvatar(perfil, null); avisar("Agora seu avatar são suas iniciais."); }
         catch (err) { avisar(err.message, "erro"); }
     });
-    document.getElementById("sair-conta").addEventListener("click", () => {
-        sair();
-        location.href = "/index.html";
-    });
 }
 
 function renderizarTopoPerfil(perfil) {
@@ -73,8 +68,6 @@ function renderizarTopoPerfil(perfil) {
     document.getElementById("perfil-nome").textContent = perfil.nome;
     document.getElementById("perfil-bio").textContent = perfil.bio || "Conte em uma frase quem você é na sessão.";
     document.getElementById("perfil-bio").classList.toggle("vazio", !perfil.bio);
-    const desde = new Date(perfil.dataCadastro + (perfil.dataCadastro.endsWith("Z") ? "" : "Z"));
-    document.getElementById("perfil-desde").textContent = `Na sessão desde ${desde.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
     const numeros = [[perfil.totalResenhas, perfil.totalResenhas === 1 ? "resenha" : "resenhas"],
         [perfil.curtidasRecebidas, perfil.curtidasRecebidas === 1 ? "curtida recebida" : "curtidas recebidas"]];
     if (perfil.livroFavorito) numeros.push(["Favorito", perfil.livroFavorito]);

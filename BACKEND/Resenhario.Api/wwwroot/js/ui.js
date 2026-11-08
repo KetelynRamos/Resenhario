@@ -29,16 +29,40 @@ function configurarCabecalho() {
     });
 
     atualizarLinkConta();
+
+    // Clicou fora do menu da conta? Fecha.
+    document.addEventListener("click", evento => {
+        const menuConta = document.querySelector(".menu-conta");
+        if (menuConta && !menuConta.contains(evento.target)) menuConta.open = false;
+    });
 }
 
-// Para quem está logado, "Entrar" vira o avatar + "Olá, Nome" e leva ao perfil.
+// Para quem está logado, "Entrar" vira o avatar + "Olá, Nome", que abre um menu
+// com "Meu perfil" e "Sair da conta". Usamos <details>/<summary>: o próprio HTML
+// abre e fecha o menu, sem precisar de JavaScript para isso.
 function atualizarLinkConta() {
     const usuario = usuarioAtual();
-    const linkConta = document.querySelector("#menu .link-conta");
-    if (!usuario || !linkConta) return;
-    linkConta.href = "/paginas/perfil.html";
-    linkConta.replaceChildren(criarAvatar(usuario.nome, usuario.avatar), document.createTextNode(`Olá, ${usuario.nome.split(" ")[0]}`));
-    if (location.pathname === "/paginas/perfil.html") linkConta.classList.add("ativo");
+    // Na primeira vez substitui o link "Entrar"; depois (ex.: trocou o nome no perfil) substitui o próprio menu.
+    const atual = document.querySelector("#menu .menu-conta, #menu a.link-conta");
+    if (!usuario || !atual) return;
+
+    const menuConta = el("details", "menu-conta");
+    const titulo = el("summary", "link-conta");
+    titulo.append(criarAvatar(usuario.nome, usuario.avatar), document.createTextNode(`Olá, ${usuario.nome.split(" ")[0]}`));
+    if (location.pathname === "/paginas/perfil.html") titulo.classList.add("ativo");
+
+    const opcoes = el("div", "menu-conta-opcoes");
+    const linkPerfil = el("a", "", "Meu perfil");
+    linkPerfil.href = "/paginas/perfil.html";
+    const botaoSair = el("button", "", "Sair da conta");
+    botaoSair.type = "button";
+    botaoSair.addEventListener("click", () => {
+        sair();
+        location.href = "/index.html";
+    });
+    opcoes.append(linkPerfil, botaoSair);
+    menuConta.append(titulo, opcoes);
+    atual.replaceWith(menuConta);
 }
 
 // ----- Avisos (toasts): substituem o alert() -----------------------
