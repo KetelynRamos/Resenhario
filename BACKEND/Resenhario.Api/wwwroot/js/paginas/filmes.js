@@ -53,6 +53,7 @@ async function salvarFilme(filme, botao, catalogo) {
 }
 
 let vinculoConfigurado = false;
+let livrosDoCatalogo = [];   // para mostrar título e autor nas mensagens
 let ultimaTentativa = null; // livro e filme do último vínculo tentado (para o "Vincular mesmo assim")
 
 async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
@@ -65,6 +66,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
 
     try {
         const [livros, filmes, adaptacoes] = await Promise.all([api("/Livro"), api("/Filme"), api("/Adaptacao")]);
+        livrosDoCatalogo = livros;
         preencherSelect(livroSelect, livros, "idLivros", "titulo", "Selecione um livro");
         preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
         if (livroEscolhido && livros.some(l => String(l.idLivros) === String(livroEscolhido))) livroSelect.value = livroEscolhido;
@@ -76,8 +78,14 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
     if (somenteRecarregar || vinculoConfigurado) return;
     vinculoConfigurado = true;
 
+    // Vínculo à mão: usa o livro escolhido em cima e o filme escolhido aqui.
     form.addEventListener("submit", e => {
         e.preventDefault();
+        if (!livroSelect.value) {
+            avisar("Escolha o livro primeiro.", "erro");
+            livroSelect.focus();
+            return;
+        }
         vincularLivroEFilme(Number(livroSelect.value), Number(filmeSelect.value));
     });
     // Aviso do TMDB: a pessoa decide se troca o filme ou vincula mesmo assim.
@@ -87,7 +95,10 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
     });
     document.getElementById("vincular-mesmo-assim").addEventListener("click", () =>
         vincularLivroEFilme(ultimaTentativa.idLivro, ultimaTentativa.idFilme, true));
-    document.getElementById("procurar-adaptacoes").addEventListener("click", () => procurarAdaptacoes(Number(livroSelect.value)));
+    document.getElementById("form-procurar-adaptacoes").addEventListener("submit", e => {
+        e.preventDefault();
+        procurarAdaptacoes(Number(livroSelect.value));
+    });
     livroSelect.addEventListener("change", () => {
         document.getElementById("aviso-vinculo").hidden = true;
         document.getElementById("sugestoes-adaptacao").replaceChildren();
@@ -116,6 +127,7 @@ async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false)
         if (err.dados?.precisaConfirmar) {
             document.getElementById("aviso-vinculo-texto").textContent = `${err.message} Tem certeza de que esse filme é adaptação desse livro?`;
             aviso.hidden = false;
+            aviso.closest("details").open = true; // o aviso fica dentro de "Já sabe qual é o filme?"
         } else {
             avisar(err.message, "erro");
         }
@@ -127,9 +139,10 @@ async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false)
 async function procurarAdaptacoes(idLivro) {
     const area = document.getElementById("sugestoes-adaptacao"), msg = document.getElementById("mensagem-sugestoes");
     if (!idLivro) {
-        avisar("Escolha um livro primeiro.", "erro");
+        avisar("Escolha o livro primeiro.", "erro");
         return;
     }
+    const livro = livrosDoCatalogo.find(l => l.idLivros === idLivro);
     document.getElementById("vincular").scrollIntoView({ behavior: "smooth", block: "start" });
     msg.textContent = "Procurando filmes baseados neste livro…";
     mostrarSkeleton(area, 3);
@@ -137,7 +150,8 @@ async function procurarAdaptacoes(idLivro) {
         const sugestoes = await api(`/Livro/${idLivro}/adaptacoes-sugeridas`);
         if (!sugestoes.length) {
             msg.textContent = "";
-            mostrarEstadoVazio(area, { titulo: "Nenhuma adaptação encontrada", texto: "O TMDB não tem filmes baseados neste livro. Se você conhece um, pesquise o filme aí em cima e junte os dois." });
+            mostrarEstadoVazio(area, { titulo: "Nenhuma adaptação encontrada",
+                texto: `O TMDB não tem filme baseado em “${livro?.titulo ?? "este livro"}”${livro?.autor ? `, de ${livro.autor}` : ""}. Se existir uma adaptação com outro nome, ela pode ser ligada em “Já sabe qual é o filme?”.` });
             return;
         }
         msg.textContent = sugestoes.length === 1 ? "Achamos 1 filme baseado neste livro:" : `Achamos ${sugestoes.length} filmes baseados neste livro:`;
@@ -149,7 +163,7 @@ async function procurarAdaptacoes(idLivro) {
         })));
     } catch {
         msg.textContent = "";
-        mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar adaptações agora. Você ainda pode juntar o livro e o filme à mão." });
+        mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar adaptações agora. O vínculo em “Já sabe qual é o filme?” continua funcionando." });
     }
 }
 
