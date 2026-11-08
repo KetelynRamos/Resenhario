@@ -31,16 +31,16 @@ public class ConferenciaAdaptacao
 
     // Busca os créditos de um filme. Devolve null se não deu para consultar
     // (sem token, TMDB fora do ar, filme sem código do TMDB...).
-    public async Task<TmdbCreditos?> BuscarCreditosAsync(string? tmdbId, CancellationToken cancellationToken = default)
+    public async Task<TmdbCreditos?> BuscarCreditosAsync(string? tmdbId)
     {
         if (string.IsNullOrWhiteSpace(Token) || !int.TryParse(tmdbId, out var id) || id <= 0) return null;
         try
         {
             var client = _httpClientFactory.CreateClient("CatalogoExterno");
             using var response = await client.SendAsync(
-                CriarRequisicaoTmdb($"https://api.themoviedb.org/3/movie/{id}/credits", Token), cancellationToken);
+                CriarRequisicaoTmdb($"https://api.themoviedb.org/3/movie/{id}/credits", Token));
             if (!response.IsSuccessStatusCode) return null;
-            return await response.Content.ReadFromJsonAsync<TmdbCreditos>(cancellationToken);
+            return await response.Content.ReadFromJsonAsync<TmdbCreditos>();
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {

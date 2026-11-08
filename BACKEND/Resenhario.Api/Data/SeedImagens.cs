@@ -1,6 +1,6 @@
-using System.Net.Http.Headers;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Models.Externos;
+using Resenhario.Api.Services;
 
 namespace Resenhario.Api.Data;
 
@@ -46,9 +46,7 @@ public static class SeedImagens
                 // Busca pelo título original + ano, que é o jeito mais certeiro no TMDB.
                 var url = "https://api.themoviedb.org/3/search/movie?include_adult=false&query="
                           + Uri.EscapeDataString(seed.TituloOriginal) + "&year=" + seed.Ano;
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                using var resposta = await client.SendAsync(request, ct);
+                using var resposta = await client.SendAsync(ConferenciaAdaptacao.CriarRequisicaoTmdb(url, token), ct);
                 if (!resposta.IsSuccessStatusCode)
                 {
                     logger.LogWarning("Seed: TMDB respondeu HTTP {Status}; pôsteres interrompidos.", (int)resposta.StatusCode);
