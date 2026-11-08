@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Resenhario.Api.Data;
+using Resenhario.Api.Services;
 
 // Program.cs: ponto de entrada. Primeiro registramos os SERVIÇOS (builder.Services),
 // depois montamos o PIPELINE de cada requisição (app.Use...) e as rotas (app.Map...).
@@ -20,6 +21,10 @@ builder.Services.AddHttpClient("CatalogoExterno", client =>
     client.Timeout = TimeSpan.FromSeconds(20);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("Resenhario/1.0 (academic project)");
 });
+
+// Confere no TMDB se um filme é adaptação de um livro (Services/ConferenciaAdaptacao.cs).
+// AddScoped: uma instância por requisição, entregue pelo construtor de quem pedir.
+builder.Services.AddScoped<ConferenciaAdaptacao>();
 
 // Banco MySQL com EF Core (Pomelo). A string de conexão vem de appsettings/user-secrets,
 // nunca escrita aqui no código.

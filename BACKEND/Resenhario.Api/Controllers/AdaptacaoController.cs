@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
 using Resenhario.Api.Models;
+using Resenhario.Api.Services;
 
 namespace Resenhario.Api.Controllers;
 
@@ -12,12 +13,17 @@ namespace Resenhario.Api.Controllers;
 public class AdaptacaoController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly ConferenciaAdaptacao _conferencia;
 
     // Só entram no ranking adaptações com pelo menos esta quantidade de notas de fidelidade:
     // evita que um filme com uma única nota 5 fique à frente de outro avaliado por muita gente.
     public const int MinimoAvaliacoesRanking = 2;
 
-    public AdaptacaoController(AppDbContext context) => _context = context;
+    public AdaptacaoController(AppDbContext context, ConferenciaAdaptacao conferencia)
+    {
+        _context = context;
+        _conferencia = conferencia;
+    }
 
     // Dados completos de uma adaptação para o card "Livro vs. Filme".
     public record AdaptacaoResposta(int IdAdaptacoes, int IdLivro, string TituloLivro,
@@ -26,7 +32,12 @@ public class AdaptacaoController : ControllerBase
         double? MediaFidelidade, int TotalAvaliacoes, double? MediaNotaLivro, int TotalResenhasLivro);
     public record CriarAdaptacaoRequest(
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um livro válido.")] int IdLivro,
-        [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme);
+        [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme,
+        bool VincularMesmoAssim = false); // true quando a pessoa viu o aviso do TMDB e quis continuar
+
+    // Resultado da conferência no TMDB: "confirmada", "nao-confere" ou "nao-conferida"
+    // (sem token, TMDB fora do ar ou filme sem código do TMDB).
+    public record ConferenciaResposta(string Situacao, List<string> AutoresOriginais, string Mensagem);
 
     // Consulta usada pela lista e pela busca por ID: junta livro, filme e as médias da comunidade.
     // O filtro (where) e a ordem (orderby) vêm ANTES do select: o EF Core não traduz para SQL
@@ -101,19 +112,28 @@ public class AdaptacaoController : ControllerBase
 
     [Authorize] // Só usuários logados podem alterar o catálogo.
     [HttpPost]
-    public async Task<IActionResult> CriarAdaptacao([FromBody] CriarAdaptacaoRequest dados)
+    public async Task<IActionResult> CriarAdaptacao([FromBody] CriarAdaptacaoRequest dados, CancellationToken cancellationToken)
     {
         if (dados.IdLivro <= 0 || dados.IdFilme <= 0)
             return BadRequest("Selecione um livro e um filme válidos.");
-        if (!await _context.Livros.AnyAsync(l => l.IdLivros == dados.IdLivro))
+        var livro = await _context.Livros.FindAsync([dados.IdLivro], cancellationToken);
+        if (livro is null)
             return BadRequest("O livro selecionado não existe no catálogo.");
-        if (!await _context.Filmes.AnyAsync(f => f.IdFilme == dados.IdFilme))
+        var filme = await _context.Filmes.FindAsync([dados.IdFilme], cancellationToken);
+        if (filme is null)
             return BadRequest("O filme selecionado não existe no catálogo.");
 
         var existente = await _context.Adaptacoes.FirstOrDefaultAsync(a =>
             a.IdLivro == dados.IdLivro && a.IdFilme == dados.IdFilme);
         if (existente is not null)
             return Conflict(new { mensagem = "Essa adaptação já está vinculada." });
+
+        // O sistema não confia só no usuário: confere no TMDB se o filme veio deste livro.
+        // Se o TMDB diz que não, devolve 409 com o aviso; a tela pergunta e, se a pessoa
+        // confirmar, manda de novo com VincularMesmoAssim = true. Sem TMDB, o vínculo segue normal.
+        var conferencia = await Conferir(livro, filme, cancellationToken);
+        if (conferencia.Situacao == "nao-confere" && !dados.VincularMesmoAssim)
+            return Conflict(new { mensagem = conferencia.Mensagem, precisaConfirmar = true, conferencia.AutoresOriginais });
 
         var adaptacao = new Adaptacao
         {
@@ -123,7 +143,36 @@ public class AdaptacaoController : ControllerBase
         };
         _context.Adaptacoes.Add(adaptacao);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetAdaptacao), new { id = adaptacao.IdAdaptacoes }, new { mensagem = "Adaptação vinculada com sucesso.", adaptacao.IdAdaptacoes });
+        return CreatedAtAction(nameof(GetAdaptacao), new { id = adaptacao.IdAdaptacoes }, new { mensagem = "Adaptação vinculada com sucesso.", adaptacao.IdAdaptacoes, conferencia.Situacao });
+    }
+
+    // GET /api/Adaptacao/5/conferencia → o TMDB confirma que este filme veio deste livro?
+    // Mostrado como selo na página do duelo.
+    [HttpGet("{id:int}/conferencia")]
+    public async Task<IActionResult> GetConferencia(int id, CancellationToken cancellationToken)
+    {
+        var adaptacao = await _context.Adaptacoes.FindAsync([id], cancellationToken);
+        if (adaptacao is null) return NotFound();
+        var livro = await _context.Livros.FindAsync([adaptacao.IdLivro], cancellationToken);
+        var filme = await _context.Filmes.FindAsync([adaptacao.IdFilme], cancellationToken);
+        if (livro is null || filme is null) return NotFound();
+        return Ok(await Conferir(livro, filme, cancellationToken));
+    }
+
+    private async Task<ConferenciaResposta> Conferir(Livro livro, Filme filme, CancellationToken cancellationToken)
+    {
+        var creditos = await _conferencia.BuscarCreditosAsync(filme.TmdbId, cancellationToken);
+        if (creditos is null)
+            return new ConferenciaResposta("nao-conferida", [], "Não foi possível conferir este vínculo no TMDB agora.");
+
+        var autores = ConferenciaAdaptacao.AutoresOriginais(creditos);
+        if (ConferenciaAdaptacao.AutorConfere(livro.Autor, autores))
+            return new ConferenciaResposta("confirmada", autores, $"O TMDB confirma: o filme é baseado na obra de {string.Join(", ", autores)}.");
+
+        var mensagem = autores.Count == 0
+            ? $"O TMDB não indica que “{filme.Titulo}” seja baseado em um livro."
+            : $"Pelo TMDB, “{filme.Titulo}” é baseado na obra de {string.Join(", ", autores)}, e não de {livro.Autor}.";
+        return new ConferenciaResposta("nao-confere", autores, mensagem);
     }
 
     [Authorize] // Só usuários logados podem alterar o catálogo.
