@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Livros · Resenhário</title>
-    <meta name="description" content="Pesquise livros no Google Books e adicione ao catálogo do Resenhário.">
+    <meta name="description" content="Encontre o livro por trás do filme que você amou.">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230b0a08'/><text x='50' y='76' text-anchor='middle' font-family='Impact,Arial Narrow,sans-serif' font-size='74' fill='%23f2b33d'>R</text></svg>">
     <!-- Tipografia: Bebas Neue (títulos, letra de cartaz de cinema) + Inter (texto). Sem internet, cai para fontes do sistema. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,21 +30,20 @@
 
     <main class="pagina">
         <section class="cabecalho-pagina">
-            <p class="sobretitulo">Google Books</p>
+            <p class="sobretitulo">Biblioteca</p>
             <h1>Encontre o livro por trás do filme</h1>
-            <p>Pesquise qualquer título, autor ou ISBN e adicione ao catálogo do Resenhário.</p>
+            <p>Busque pelo título ou por quem escreveu e guarde o que vai ler depois da sessão.</p>
         </section>
         <form id="form-busca-livros" class="busca" role="search">
             <label for="termo-livro" class="sr-only">Título, autor ou ISBN</label>
-            <input id="termo-livro" type="search" placeholder="Ex.: Duna, Saramago, Cidade de Deus…" required>
+            <input id="termo-livro" type="search" placeholder="Duna, Saramago, Cidade de Deus…" required>
             <button type="submit">Pesquisar</button>
         </form>
-        <p class="busca-fonte">Resultados fornecidos pela Google Books API.</p>
         <p id="mensagem-busca" class="mensagem" aria-live="polite"></p>
         <div id="resultados-busca" class="grade-obras"></div>
 
         <section class="secao">
-            <div class="titulo-secao"><div><p class="sobretitulo">Catálogo</p><h2>Livros no Resenhário</h2></div></div>
+            <div class="titulo-secao"><div><p class="sobretitulo">Na estante da comunidade</p><h2>Livros que a galera já trouxe</h2></div></div>
             <div id="lista-livros" class="grade-obras"></div>
         </section>
     </main>

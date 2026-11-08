@@ -39,7 +39,7 @@ async function api(caminho, opcoes = {}) {
     try {
         resposta = await fetch(`${API_URL}${caminho}`, { ...opcoes, headers });
     } catch {
-        throw new Error("Não foi possível falar com o servidor. Confira se a API está ligada.");
+        throw new Error("Não conseguimos conectar agora. Confira sua internet e tente de novo.");
     }
 
     if (!resposta.ok) {

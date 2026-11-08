@@ -41,7 +41,7 @@ async function carregarLivrosEm(container, comEstante = false) {
     try {
         const livros = await api("/Livro");
         if (!livros.length) {
-            mostrarEstadoVazio(container, { titulo: "O catálogo ainda está vazio", texto: "Pesquise no Google Books e adicione o primeiro livro." });
+            mostrarEstadoVazio(container, { titulo: "Nenhum livro por aqui ainda", texto: "Busque um livro aí em cima e seja a primeira pessoa a trazer." });
             return;
         }
         container.replaceChildren(...livros.map(l => cardLivro(l, comEstante)));
@@ -56,7 +56,7 @@ async function carregarFilmesEm(container, comEstante = false) {
     try {
         const filmes = await api("/Filme");
         if (!filmes.length) {
-            mostrarEstadoVazio(container, { titulo: "Nenhum filme no catálogo", texto: "Pesquise no TMDB e adicione o primeiro filme." });
+            mostrarEstadoVazio(container, { titulo: "Nenhum filme por aqui ainda", texto: "Busque um filme aí em cima e abra a sessão." });
             return;
         }
         container.replaceChildren(...filmes.map(f => cardFilme(f, comEstante)));
@@ -115,7 +115,7 @@ async function carregarDestaquesHome() {
 
         if (!ranking.length) {
             document.querySelector(".hero-destaque").hidden = true;
-            mostrarEstadoVazio(duelos, { titulo: "Ainda não há adaptações avaliadas", texto: "Escreva a primeira resenha com nota de fidelidade.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(duelos, { titulo: "Nenhum duelo avaliado ainda", texto: "Dá a primeira nota e começa a disputa.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
             return;
         }
         const [primeiro, ...outros] = ranking;
@@ -139,7 +139,7 @@ function preencherNumerosHero(numeros) {
 }
 
 // ---------------------------------------------------------------------
-// Livros: busca no Google Books (via nossa API) + catálogo
+// Livros: busca de livros (Google Books, via nossa API) + catálogo
 // ---------------------------------------------------------------------
 function iniciarPaginaLivros() {
     const form = document.getElementById("form-busca-livros");
@@ -152,16 +152,16 @@ function iniciarPaginaLivros() {
         const termo = document.getElementById("termo-livro").value.trim();
         const area = document.getElementById("resultados-busca"), msg = document.getElementById("mensagem-busca");
         if (!termo) return;
-        msg.textContent = "Pesquisando no Google Books…";
+        msg.textContent = "Procurando livros…";
         mostrarSkeleton(area, 6);
         try {
             const livros = await api(`/Livro/buscar?q=${encodeURIComponent(termo)}`);
             if (!livros.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { titulo: "Nenhum livro encontrado", texto: "Tente outro título ou o nome do autor." });
+                mostrarEstadoVazio(area, { titulo: "Não achamos esse livro", texto: "Tenta outro título ou o nome de quem escreveu." });
                 return;
             }
-            msg.textContent = `${livros.length} resultado(s) no Google Books.`;
+            msg.textContent = `${livros.length} ${livros.length === 1 ? "livro encontrado" : "livros encontrados"}.`;
             area.replaceChildren(...livros.map(livro => criarCardObra({
                 titulo: livro.titulo, subtitulo: livro.autor, imagem: livro.capaUrl, tipo: "Livro",
                 detalhe: livro.anoPublicacao ? `Publicado em ${livro.anoPublicacao.slice(0, 4)}` : "",
@@ -169,7 +169,7 @@ function iniciarPaginaLivros() {
             })));
         } catch (err) {
             msg.textContent = "";
-            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no Google Books falhou", texto: `${err.message} Os livros já salvos no catálogo continuam disponíveis abaixo.` });
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar livros agora. Tenta de novo em instantes; os livros que já estão aqui continuam logo abaixo." });
         }
     });
 }
@@ -191,7 +191,7 @@ async function salvarLivro(livro, botao, catalogo) {
 }
 
 // ---------------------------------------------------------------------
-// Filmes: busca no TMDB, vínculo com livros e catálogo
+// Filmes: busca de filmes (TMDB, via nossa API), vínculo com livros e catálogo
 // ---------------------------------------------------------------------
 function iniciarPaginaFilmes() {
     const form = document.getElementById("form-busca-filmes");
@@ -205,16 +205,16 @@ function iniciarPaginaFilmes() {
         const termo = document.getElementById("termo-filme").value.trim();
         const area = document.getElementById("resultados-filmes"), msg = document.getElementById("mensagem-busca-filmes");
         if (!termo) return;
-        msg.textContent = "Pesquisando no TMDB…";
+        msg.textContent = "Procurando filmes…";
         mostrarSkeleton(area, 6);
         try {
             const filmes = await api(`/Filme/buscar?q=${encodeURIComponent(termo)}`);
             if (!filmes.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { titulo: "Nenhum filme encontrado", texto: "Tente o título original ou outro termo." });
+                mostrarEstadoVazio(area, { titulo: "Não achamos esse filme", texto: "Tenta o título original, em inglês, ou outro nome." });
                 return;
             }
-            msg.textContent = `${filmes.length} filme(s) no TMDB.`;
+            msg.textContent = `${filmes.length} ${filmes.length === 1 ? "filme encontrado" : "filmes encontrados"}.`;
             area.replaceChildren(...filmes.map(f => criarCardObra({
                 titulo: f.titulo, imagem: f.posterUrl, tipo: "Filme",
                 subtitulo: [f.anoLancamento, f.diretor].filter(Boolean).join(" · "),
@@ -222,7 +222,7 @@ function iniciarPaginaFilmes() {
             })));
         } catch (err) {
             msg.textContent = "";
-            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no TMDB falhou", texto: `${err.message} Os filmes já salvos continuam disponíveis abaixo.` });
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar filmes agora. Tenta de novo em instantes; os filmes que já estão aqui continuam logo abaixo." });
         }
     });
 }
@@ -255,7 +255,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
         preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
         renderizarAdaptacoes(lista, adaptacoes);
     } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar as adaptações", texto: e.message });
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar os duelos", texto: e.message });
     }
 
     if (somenteRecarregar || vinculoConfigurado) return;
@@ -265,7 +265,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
         if (!exigirLogin()) return;
         try {
             await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro: Number(livroSelect.value), idFilme: Number(filmeSelect.value) }) });
-            avisar("Adaptação vinculada! Agora ela pode receber notas de fidelidade.");
+            avisar("Duelo aberto! Agora é com a galera.");
             await iniciarVinculoAdaptacoes(true);
         } catch (err) { avisar(err.message, "erro"); }
     });
@@ -274,7 +274,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
 // Adaptações já vinculadas, cada uma no card "Livro vs. Filme".
 function renderizarAdaptacoes(lista, adaptacoes) {
     if (!adaptacoes.length) {
-        mostrarEstadoVazio(lista, { titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
+        mostrarEstadoVazio(lista, { titulo: "Nenhum duelo aberto", texto: "Junta um livro e um filme aí em cima." });
         return;
     }
     lista.replaceChildren(...adaptacoes.map(a => criarDuelo(a)));
@@ -360,7 +360,7 @@ async function iniciarEstante() {
     if (!area) return;
     if (!usuarioAtual()?.token) {
         document.getElementById("painel-estatisticas").hidden = true;
-        mostrarEstadoVazio(area, { titulo: "Entre para ver sua estante", texto: "Sua estante guarda o que você quer ler, está lendo e já leu.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
+        mostrarEstadoVazio(area, { titulo: "Entre para ver sua estante", texto: "Guarde o que quer ler, acompanhe o que está lendo e bata sua meta.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
         return;
     }
     mostrarSkeleton(area, 8);
@@ -369,7 +369,7 @@ async function iniciarEstante() {
         renderizarEstatisticasLeitura(itens);
         configurarFiltrosEstante(area);
         if (!itens.length) {
-            mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
             return;
         }
         area.replaceChildren(...itens.map(item => cardEstante(item, itens, area)));
@@ -414,7 +414,7 @@ function cardEstante(item, itens, area) {
             card.remove();
             renderizarEstatisticasLeitura(itens);
             avisar("Item removido da estante.");
-            if (!itens.length) mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Adicione livros do catálogo.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            if (!itens.length) mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
         } catch (err) { remover.disabled = false; avisar(err.message, "erro"); }
     });
     acoes.append(select, remover);
@@ -526,7 +526,7 @@ async function iniciarResenhas() {
 
     const atualizarAdaptacoes = () => {
         const idLivro = Number(livroSelect.value || 0);
-        adaptacaoSelect.replaceChildren(new Option("Não vi nenhuma adaptação", ""),
+        adaptacaoSelect.replaceChildren(new Option("Ainda não vi o filme", ""),
             ...adaptacoesCache.filter(a => a.idLivro === idLivro).map(a => new Option(a.tituloFilme, a.idAdaptacoes)));
         campoFidelidade.hidden = true;
     };
@@ -540,14 +540,14 @@ async function iniciarResenhas() {
         const notaLivro = valorEstrelas("nota-livro");
         const notaFidelidade = idAdaptacao ? valorEstrelas("nota-fidelidade") : null;
         const texto = comentario.value.trim();
-        if (!idLivro) { avisar("Selecione um livro.", "erro"); return; }
-        if (!notaLivro) { avisar("Dê de 1 a 5 estrelas para o livro.", "erro"); return; }
-        if (idAdaptacao && !notaFidelidade) { avisar("Dê de 1 a 5 estrelas para a fidelidade do filme.", "erro"); return; }
+        if (!idLivro) { avisar("Escolha um livro primeiro.", "erro"); return; }
+        if (!notaLivro) { avisar("Faltou dar as estrelas do livro.", "erro"); return; }
+        if (idAdaptacao && !notaFidelidade) { avisar("Faltou dizer se o filme foi fiel.", "erro"); return; }
         try {
             await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario: texto, notaFidelidade, assistiuFilme: !!idAdaptacao }) });
             form.reset(); atualizarAdaptacoes();
             estrelasLivro.limpar(); estrelasFidelidade.limpar(); contador.textContent = "0/5000";
-            avisar("Resenha publicada! Ela já aparece no feed.");
+            avisar("Resenha no ar! Já está no feed.");
             await carregarUltimasResenhas();
         } catch (err) { avisar(err.message, "erro"); }
     });
@@ -568,7 +568,7 @@ async function carregarResenhasEm(lista, pagina, tamanho, acrescentar = false) {
     try {
         const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=${tamanho}`);
         if (!dados.itens.length && !acrescentar) {
-            mostrarEstadoVazio(lista, { titulo: "Ainda não há resenhas", texto: "Seja a primeira pessoa a comparar um livro com o filme.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(lista, { titulo: "Ninguém resenhou ainda", texto: "Que tal ser a primeira pessoa a dar a opinião?", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
             return dados;
         }
         const cards = dados.itens.map(cardResenha);
@@ -685,7 +685,7 @@ async function iniciarRanking() {
         const ranking = (await api("/Adaptacao/ranking")).slice(0, 10);
         if (!ranking.length) {
             lista.replaceChildren();
-            mostrarEstadoVazio(podio, { titulo: "O ranking ainda está vazio", texto: "Uma adaptação entra no ranking quando recebe pelo menos 2 notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(podio, { titulo: "O pódio ainda está vazio", texto: "Dá a sua nota e ajuda a montar o Top do Resenhário.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
             return;
         }
         // No pódio o 1º lugar fica no meio: ordem visual 2º, 1º, 3º.
