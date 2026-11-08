@@ -28,10 +28,17 @@ function configurarCabecalho() {
         if (new URL(link.href).pathname === atual) link.classList.add("ativo");
     });
 
-    // Troca "Entrar" pelo primeiro nome de quem está logado.
+    atualizarLinkConta();
+}
+
+// Para quem está logado, "Entrar" vira o avatar + "Olá, Nome" e leva ao perfil.
+function atualizarLinkConta() {
     const usuario = usuarioAtual();
     const linkConta = document.querySelector("#menu .link-conta");
-    if (usuario && linkConta) linkConta.textContent = `Olá, ${usuario.nome.split(" ")[0]}`;
+    if (!usuario || !linkConta) return;
+    linkConta.href = "/paginas/perfil.html";
+    linkConta.replaceChildren(criarAvatar(usuario.nome, usuario.avatar), document.createTextNode(`Olá, ${usuario.nome.split(" ")[0]}`));
+    if (location.pathname === "/paginas/perfil.html") linkConta.classList.add("ativo");
 }
 
 // ----- Avisos (toasts): substituem o alert() -----------------------
@@ -61,7 +68,7 @@ function matizDoTexto(texto) {
 function criarPlaceholder(titulo, tipo) {
     const div = el("div", `capa-placeholder capa-${tipo === "Filme" ? "filme" : "livro"}`);
     div.style.setProperty("--matiz", matizDoTexto(titulo));
-    div.append(el("span", "capa-placeholder-tipo", tipo === "Filme" ? "🎬 Filme" : "📖 Livro"),
+    div.append(el("span", "capa-placeholder-tipo", tipo === "Filme" ? "Filme" : "Livro"),
         el("strong", "", titulo || "Sem título"));
     return div;
 }
@@ -111,11 +118,10 @@ function mostrarSkeleton(container, quantidade = 6, formato = "obra") {
 }
 
 // Mensagem amigável para listas vazias ou erros.
-// opcoes: { icone, titulo, texto, botao: { texto, href } , erro }
+// opcoes: { titulo, texto, botao: { texto, href }, erro }
 function mostrarEstadoVazio(container, opcoes) {
     const caixa = el("div", `estado-vazio${opcoes.erro ? " estado-erro" : ""}`);
-    caixa.append(el("span", "estado-vazio-icone", opcoes.icone || (opcoes.erro ? "⚠️" : "🎞️")),
-        el("h3", "", opcoes.titulo), el("p", "", opcoes.texto || ""));
+    caixa.append(el("h3", "", opcoes.titulo), el("p", "", opcoes.texto || ""));
     if (opcoes.botao) {
         const link = el("a", "botao", opcoes.botao.texto);
         link.href = opcoes.botao.href;
@@ -152,14 +158,37 @@ function dataRelativa(dataIso) {
     return "agora mesmo";
 }
 
-// Avatar com as iniciais do nome e uma cor própria para cada pessoa.
-function criarAvatar(nome) {
+// Avatar da pessoa: a imagem escolhida (avatar pronto ou foto) ou, sem imagem,
+// as iniciais do nome com uma cor própria para cada pessoa.
+function criarAvatar(nome, url) {
+    if (url) {
+        const img = el("img", "avatar avatar-foto");
+        img.src = url;
+        img.alt = "";
+        img.onerror = () => img.replaceWith(criarAvatar(nome)); // se a imagem falhar, volta para as iniciais
+        return img;
+    }
     const partes = (nome || "?").trim().split(/\s+/);
     const iniciais = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
     const avatar = el("span", "avatar", iniciais);
     avatar.style.setProperty("--matiz", matizDoTexto(nome));
     avatar.setAttribute("aria-hidden", "true");
     return avatar;
+}
+
+// ----- Ícones em SVG (traço simples, no lugar de emojis) -------------
+const ICONES = {
+    coracao: '<path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.4 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.6 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/>',
+    balao: '<path d="M4 5h16v11H9l-5 4z"/>',
+    compartilhar: '<path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/>'
+};
+
+function criarIcone(nome) {
+    const span = el("span", "icone");
+    span.setAttribute("aria-hidden", "true");
+    // Os desenhos são textos fixos do próprio código (não vêm do usuário), por isso o innerHTML é seguro aqui.
+    span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONES[nome]}</svg>`;
+    return span;
 }
 
 // ----- Seletor de estrelas (formulário de resenha) -------------------
@@ -221,6 +250,17 @@ async function carregarChartJs() {
     return true;
 }
 
+// Título do card. Com link, o <a> "estica" sobre o card inteiro (CSS .duelo-clicavel),
+// então clicar em qualquer parte do card abre a página do duelo.
+function criarTituloDuelo(item, semLink) {
+    const titulo = el("h3");
+    if (semLink) { titulo.textContent = item.tituloLivro; return titulo; }
+    const link = el("a", "duelo-link", item.tituloLivro);
+    link.href = `/paginas/adaptacao.html?id=${item.idAdaptacoes}`;
+    titulo.appendChild(link);
+    return titulo;
+}
+
 // ----- Setas dos carrosséis (no celular basta arrastar com o dedo) --
 function configurarCarrosseis() {
     document.querySelectorAll(".carrossel").forEach(carrossel => {
@@ -261,8 +301,9 @@ function criarBlocoNota(rotulo, media, total, singular, plural, classe) {
     return bloco;
 }
 
-function criarDuelo(item, destaque = false) {
-    const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}`);
+// semLink = true na própria página do duelo (o card não precisa levar a ele mesmo).
+function criarDuelo(item, destaque = false, semLink = false) {
+    const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}${semLink ? "" : " duelo-clicavel"}`);
 
     const imagens = el("div", "duelo-imagens");
     const livro = el("figure", "duelo-capa duelo-livro");
@@ -275,12 +316,12 @@ function criarDuelo(item, destaque = false) {
     const filmeTexto = [item.tituloFilme, item.anoLancamento && `(${item.anoLancamento})`].filter(Boolean).join(" ");
     info.append(
         el("p", "duelo-veredito", vereditoFidelidade(item.mediaFidelidade)),
-        el("h3", "", item.tituloLivro),
+        criarTituloDuelo(item, semLink),
         el("p", "duelo-sub", `${item.autorLivro || ""} → ${filmeTexto}${item.diretor ? `, de ${item.diretor}` : ""}`));
     const notas = el("div", "duelo-notas");
     notas.append(
-        criarBlocoNota("📖 Nota do livro", item.mediaNotaLivro, item.totalResenhasLivro, "resenha", "resenhas", "nota-livro"),
-        criarBlocoNota("🎬 Fidelidade do filme", item.mediaFidelidade, item.totalAvaliacoes, "avaliação", "avaliações", "nota-filme"));
+        criarBlocoNota("Nota do livro", item.mediaNotaLivro, item.totalResenhasLivro, "resenha", "resenhas", "nota-livro"),
+        criarBlocoNota("Fidelidade do filme", item.mediaFidelidade, item.totalAvaliacoes, "avaliação", "avaliações", "nota-filme"));
     info.appendChild(notas);
 
     card.append(imagens, info);

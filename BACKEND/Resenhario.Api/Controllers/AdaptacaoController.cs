@@ -28,35 +28,37 @@ public class AdaptacaoController : ControllerBase
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um livro válido.")] int IdLivro,
         [Range(1, int.MaxValue, ErrorMessage = "Selecione um filme válido.")] int IdFilme);
 
-    // GET /api/Adaptacao/5 → 200 com o vínculo ou 404
+    // Consulta usada pela lista e pela busca por ID: junta livro, filme e as médias da comunidade.
+    // O filtro (where) e a ordem (orderby) vêm ANTES do select: o EF Core não traduz para SQL
+    // um filtro aplicado sobre o record já montado.
+    private IQueryable<AdaptacaoResposta> ConsultarAdaptacoes(int? id = null) =>
+        from a in _context.Adaptacoes
+        join l in _context.Livros on a.IdLivro equals l.IdLivros
+        join f in _context.Filmes on a.IdFilme equals f.IdFilme
+        where id == null || a.IdAdaptacoes == id
+        orderby l.Titulo, f.Titulo
+        select new AdaptacaoResposta(a.IdAdaptacoes, a.IdLivro, l.Titulo,
+            a.IdFilme, f.Titulo, f.PosterUrl, a.DataVinculo,
+            l.Autor, l.CapaUrl, f.Diretor, f.AnoLancamento,
+            _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
+                .Select(r => (double?)r.NotaFidelidade).Average(),
+            _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null),
+            _context.Reviews.Where(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
+                .Select(r => (double?)r.NotaLivro).Average(),
+            _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null));
+
+    // GET /api/Adaptacao/5 → 200 com livro, filme e médias, ou 404
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<Adaptacao>> GetAdaptacao(int id)
+    public async Task<ActionResult<AdaptacaoResposta>> GetAdaptacao(int id)
     {
-        var adaptacao = await _context.Adaptacoes.FindAsync(id);
+        var adaptacao = await ConsultarAdaptacoes(id).FirstOrDefaultAsync();
         return adaptacao is null ? NotFound() : Ok(adaptacao);
     }
 
+    // GET /api/Adaptacao → 200 com todas, em ordem de livro e filme
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AdaptacaoResposta>>> GetAdaptacoes()
-    {
-        var adaptacoes = await (
-            from a in _context.Adaptacoes
-            join l in _context.Livros on a.IdLivro equals l.IdLivros
-            join f in _context.Filmes on a.IdFilme equals f.IdFilme
-            orderby l.Titulo, f.Titulo
-            select new AdaptacaoResposta(a.IdAdaptacoes, a.IdLivro, l.Titulo,
-                a.IdFilme, f.Titulo, f.PosterUrl, a.DataVinculo,
-                l.Autor, l.CapaUrl, f.Diretor, f.AnoLancamento,
-                _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-                    .Select(r => (double?)r.NotaFidelidade).Average(),
-                _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null),
-                _context.Reviews.Where(r => r.IdLivro == a.IdLivro && r.NotaLivro != null)
-                    .Select(r => (double?)r.NotaLivro).Average(),
-                _context.Reviews.Count(r => r.IdLivro == a.IdLivro && r.NotaLivro != null))
-        ).ToListAsync();
-        return Ok(adaptacoes);
-    }
-
+    public async Task<ActionResult<IEnumerable<AdaptacaoResposta>>> GetAdaptacoes() =>
+        Ok(await ConsultarAdaptacoes().ToListAsync());
 
     // Ranking das adaptações com a "avaliação dupla" da comunidade:
     // - MediaFidelidade: média das notas de fidelidade dadas a ESTA adaptação;

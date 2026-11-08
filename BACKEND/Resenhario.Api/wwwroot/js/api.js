@@ -28,6 +28,12 @@ function sair() {
     localStorage.removeItem(SESSION_KEY);
 }
 
+// Atualiza só alguns campos da sessão guardada (ex.: nome ou avatar depois de editar o perfil).
+function atualizarSessao(campos) {
+    const usuario = usuarioAtual();
+    if (usuario) localStorage.setItem(SESSION_KEY, JSON.stringify({ ...usuario, ...campos }));
+}
+
 // Função central de chamadas: envia o token, converte JSON e transforma
 // respostas de erro (400, 401, 404, 409, 500...) em mensagens legíveis.
 async function api(caminho, opcoes = {}) {
@@ -39,7 +45,7 @@ async function api(caminho, opcoes = {}) {
     try {
         resposta = await fetch(`${API_URL}${caminho}`, { ...opcoes, headers });
     } catch {
-        throw new Error("Não foi possível falar com o servidor. Confira se a API está ligada.");
+        throw new Error("Não conseguimos conectar agora. Confira sua internet e tente de novo.");
     }
 
     if (!resposta.ok) {

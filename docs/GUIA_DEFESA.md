@@ -14,6 +14,7 @@ Para cada conceito da disciplina: **onde ele está no nosso código** (arquivo:l
 | 5. APIs externas | Lucas |
 | 7. Segurança | Matheus |
 | 8. Front-end · Perguntas gerais | Alejandro |
+| 9. Comunidade, perfil e meta | Ketelyn e Lucas |
 
 ---
 
@@ -66,9 +67,9 @@ public LivroController(AppDbContext context) => _context = context;
 | **C**ontroller | `Controllers/` | `LivroController`: recebe a requisição, usa o Model e o banco, devolve a resposta |
 | **V**iew | `wwwroot/` | `paginas/livros.html` + `css/style.css` + `js/script.js` |
 
-**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:128`, `app.UseStaticFiles()`).
+**Explicação:** nossas Views são **HTML + JavaScript** em vez de Razor (`.cshtml`). A ligação entre front e back é feita com **`fetch()`** trocando **JSON**, alternativa vista em aula. A API serve essas páginas pela pasta `wwwroot` (`Program.cs:130`, `app.UseStaticFiles()`).
 
-O front chama a API em um único lugar: `wwwroot/js/api.js:33` (função `api`) e `:40` (`fetch`). Exemplos de cada verbo: POST em `js/script.js:73`, PUT em `:393`, DELETE em `:412`.
+O front chama a API em um único lugar: `wwwroot/js/api.js:39` (função `api`) e `:46` (`fetch`). Exemplos de cada verbo: POST em `js/script.js:75`, PUT em `:575`, DELETE em `:595`.
 
 ```javascript
 await api(`/Estante/${item.idEstante}`, { method: "PUT", body: JSON.stringify({ status: select.value }) });
@@ -100,10 +101,10 @@ public class LivroController : ControllerBase
 | Dado inválido | qualquer | **400** automático (Data Annotations) | `Models/Livro.cs:18` |
 
 ### Swagger
-`Program.cs:121`: `app.UseSwaggerUI(...)` → `http://localhost:5131/swagger`. O botão **Authorize** aceita o token JWT para testar as rotas protegidas.
+`Program.cs:123`: `app.UseSwaggerUI(...)` → `http://localhost:5131/swagger`. O botão **Authorize** aceita o token JWT para testar as rotas protegidas.
 
 ### Minimal API
-`Program.cs:138`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
+`Program.cs:140`: `app.MapGet("/api/saude", ...)`. Uma rota escrita direto no `Program.cs`, sem controller, que responde **200** se o banco está conectado e **503** se não está. Mostra o outro estilo de API visto em aula.
 
 ---
 
@@ -135,7 +136,7 @@ public class AppDbContext : DbContext
 **Explicação:** acessar o banco demora (rede + disco). Com `await`, o servidor **libera a thread** para atender outras pessoas enquanto espera a resposta, em vez de ficar parado. Por isso todos os métodos do `LivroController` são `async Task<...>` e usam as versões `...Async`.
 
 ### Consultas com JOIN e média (ranking)
-`Controllers/AdaptacaoController.cs:69-91`: `join` entre Adaptacoes, Livros e Filmes, `Average()` das notas de fidelidade, filtro `TotalAvaliacoes >= MinimoAvaliacoesRanking` (`:90`) e `OrderByDescending` (`:91`). O EF Core transforma tudo em **um único SQL** com `JOIN` e `AVG()`.
+`Controllers/AdaptacaoController.cs:71-93`: `join` entre Adaptacoes, Livros e Filmes, `Average()` das notas de fidelidade, filtro `TotalAvaliacoes >= MinimoAvaliacoesRanking` (`:92`) e `OrderByDescending` (`:93`). O EF Core transforma tudo em **um único SQL** com `JOIN` e `AVG()`.
 
 ### Banco e scripts
 O esquema é criado pelos scripts `BANCO DE DADOS/01`, `05`, `08` e `09` (não destrutivos). Escolhemos scripts em vez de *migrations* porque o banco já existia, criado pelo responsável de banco da equipe, e os scripts são fáceis de rodar no Workbench e no Aiven.
@@ -177,7 +178,7 @@ public string Titulo { get; set; }
 [Range(1, 5, ErrorMessage = "A nota da obra deve estar entre 1 e 5 estrelas.")]
 public int? NotaLivro { get; set; }
 ```
-**Explicação:** as regras ficam **em cima da propriedade**. Com `[ApiController]`, o ASP.NET valida **antes** de entrar no método e responde **400** com as mensagens. O front mostra essas mensagens (`wwwroot/js/api.js:51`).
+**Explicação:** as regras ficam **em cima da propriedade**. Com `[ApiController]`, o ASP.NET valida **antes** de entrar no método e responde **400** com as mensagens. O front mostra essas mensagens (`wwwroot/js/api.js:57`).
 
 ### Tratamento global de erros
 `Program.cs:108`: `app.UseExceptionHandler(...)`. Qualquer exceção não tratada vira **500** com JSON `{ "mensagem": "Ocorreu um erro inesperado..." }`, sem expor o *stack trace* (detalhes internos) para o navegador. O detalhe continua no log do terminal.
@@ -199,10 +200,10 @@ senhaValida = BCrypt.Net.BCrypt.Verify(dados.Senha, usuario.SenhaHash); // login
 
 ### Token JWT
 `Controllers/AuthController.cs:129` (ID do usuário dentro do token) e `:136-137` (token com validade de 8 h); validação em `Program.cs:41`.
-**Explicação:** depois do login, a API entrega um "crachá" assinado (o token). O navegador manda esse crachá em cada requisição (`Authorization: Bearer ...`, em `wwwroot/js/api.js:36`). A API confere a **assinatura**: se alguém alterar o token, a assinatura não bate e a resposta é 401.
+**Explicação:** depois do login, a API entrega um "crachá" assinado (o token). O navegador manda esse crachá em cada requisição (`Authorization: Bearer ...`, em `wwwroot/js/api.js:42`). A API confere a **assinatura**: se alguém alterar o token, a assinatura não bate e a resposta é 401.
 
 ### Cada um mexe só no que é seu
-`Controllers/EstanteController.cs:116` (lê o ID **do token**), `:82` e `Controllers/ReviewController.cs:134`
+`Controllers/EstanteController.cs:116` (lê o ID **do token**), `:82` e `Controllers/ReviewController.cs:136`
 ```csharp
 estante.IdUsuario = usuarioId; // Nunca confiar no ID enviado pelo navegador.
 ```
@@ -216,11 +217,40 @@ Conexão do banco, token do TMDB e chave do Google ficam no **`dotnet user-secre
 
 | O quê | Onde | Explicação |
 |---|---|---|
-| Chamadas à API | `wwwroot/js/api.js:33` | Uma função central que coloca o token, converte JSON e transforma erros em mensagens. |
-| Componentes reutilizáveis | `wwwroot/js/ui.js` (ex.: `criarDuelo` em `:264`) | O card "Livro vs. Filme" é montado por uma função usada na home, no ranking e em Filmes. |
+| Chamadas à API | `wwwroot/js/api.js:39` | Uma função central que coloca o token, converte JSON e transforma erros em mensagens. |
+| Componentes reutilizáveis | `wwwroot/js/ui.js` (ex.: `criarDuelo` em `:305`) | O card "Livro vs. Filme" é montado por uma função usada na home, no ranking e em Filmes. |
 | Proteção contra XSS | `wwwroot/js/ui.js:12` (`textContent`) | Texto digitado por usuários nunca vira HTML executável. |
-| Gráficos | `wwwroot/js/ui.js:211` | Chart.js do CDN; se a internet falhar, carrega a cópia local em `wwwroot/lib`. |
+| Gráficos | `wwwroot/js/ui.js:240` | Chart.js do CDN; se a internet falhar, carrega a cópia local em `wwwroot/lib`. |
 | Responsivo | `wwwroot/css/style.css` (blocos `@media`) | Menu vira botão ☰ no celular; grades se reorganizam. |
+
+---
+
+## 9. Comunidade, perfil e meta de leitura
+
+| O quê | Onde | Explicação simples |
+|---|---|---|
+| **Curtir** | `Controllers/ComunidadeController.cs:32` (POST) e `:37` (409 se já curtiu) | Rota "dentro" da resenha: `POST /api/Review/5/curtida`. Uma pessoa só curte uma vez: o controller confere antes (409 Conflict) e o banco garante com o índice único `UQ_Curtidas_Review_Usuario` (`BANCO DE DADOS/10_perfil_meta_comunidade.sql:48`). |
+| **"Eu já curti?"** | `Controllers/ReviewController.cs:98` | O feed é público, mas se a pessoa mandar o token, a API marca as resenhas que **ela** curtiu (`CurtidoPorMim`), e o coração aparece preenchido. |
+| **Curtida instantânea** | `wwwroot/js/script.js:973` | O coração muda na hora e só depois a API confirma. Se a API recusar, a tela desfaz. Isso se chama "atualização otimista". |
+| **Comentários** | `Controllers/ComunidadeController.cs` | GET lista, POST cria (201), DELETE apaga, e só o autor apaga o próprio comentário (o ID vem do token). Com `ON DELETE CASCADE`, apagar uma resenha apaga as curtidas e os comentários dela. |
+| **Avatar** | `Controllers/UsuarioController.cs:21-23` (validação) e `:111` (servir a imagem) | Pode ser um dos 8 avatares prontos (arquivos SVG em `wwwroot/img/avatares`) ou uma foto. A foto é **recortada e reduzida no navegador** (`wwwroot/js/script.js:501`, com `<canvas>`) para 256 px antes de enviar, e fica no banco como texto base64. A rota `GET /api/Usuario/{id}/avatar` devolve a imagem para o feed. |
+| **Meta de leitura** | `Controllers/UsuarioController.cs:96` (salva) e `wwwroot/js/script.js:687` (painel) | A pessoa escolhe quantos livros ler em 6 meses. Guardamos a meta e a data de início; o progresso conta os livros marcados como "Lido" depois dessa data (`script.js:683`) e compara com os 6 meses anteriores. |
+| **Accordion "Conta"** | `wwwroot/paginas/perfil.html` | `<details>` e `<summary>` são tags do próprio HTML que abrem e fecham sozinhas, sem JavaScript. |
+| **Ícones sem emoji** | `wwwroot/js/ui.js:186` | Coração, balão e compartilhar são pequenos desenhos SVG escritos no código. |
+
+**Perguntas prováveis sobre essa parte**
+
+**23. O que impede alguém de curtir a mesma resenha 50 vezes?**
+Duas barreiras: o controller verifica e responde **409 Conflict**, e o banco tem um **índice único** em (resenha, usuário). Mesmo que alguém chame a API direto, o banco recusa a segunda curtida.
+
+**24. Onde fica a foto do perfil? Não pesa no banco?**
+A foto é reduzida no próprio navegador para 256×256 em JPEG (algumas dezenas de KB) e guardada como texto (base64) na coluna `Avatar`. A API aceita só imagens JPG, PNG ou WEBP de até cerca de 220 KB. No feed não mandamos a imagem no JSON: mandamos só o endereço `/api/Usuario/{id}/avatar`, e o navegador a baixa e guarda em cache.
+
+**25. Por que a curtida aparece antes da resposta do servidor?**
+Para o site parecer rápido. É a "atualização otimista": a tela assume que vai dar certo e, se a API devolver erro, desfaz a mudança e mostra o aviso.
+
+**26. Como a meta sabe quais livros contar?**
+Quando um livro vira "Lido", a estante guarda a data da mudança (`DataAtualizacao`). A meta conta os livros "Lido" com data depois do início do desafio, e a comparação usa os 6 meses anteriores a esse início.
 
 ---
 
@@ -231,9 +261,9 @@ Conexão do banco, token do TMDB e chave do Google ficam no **`dotnet user-secre
 | **JWT** | `AuthController`, `Program.cs:41` | "Crachá" assinado que prova quem é o usuário sem guardar sessão no servidor. |
 | **record** e `with` | `Models/Externos/*.cs`, `CatalogoExternoController.cs:135` | `record` é uma classe enxuta para carregar dados. `f with { Diretor = ... }` cria uma **cópia** mudando só um campo. |
 | **Task.WhenAll** | `CatalogoExternoController.cs:131` | Dispara as 12 buscas de diretor **ao mesmo tempo** e espera todas: a busca caiu de ~6 s para ~0,7 s no nosso teste. |
-| **LINQ com `join`** | `AdaptacaoController.cs:69` | Escrita parecida com SQL dentro do C#; o EF Core traduz para `JOIN`. |
+| **LINQ com `join`** | `AdaptacaoController.cs:36` | Escrita parecida com SQL dentro do C#; o EF Core traduz para `JOIN`. |
 | **user-secrets** | `LEIA-ME.md`, seção 3 | Arquivo de configuração por usuário, fora da pasta do projeto, que não vai para o Git. |
-| **Seed idempotente** | `Data/SeedData.cs:139` e `:146` | Antes de inserir, confere se já existe (`AnyAsync`): rodar várias vezes não duplica. |
+| **Seed idempotente** | `Data/SeedData.cs:171` e `:178` | Antes de inserir, confere se já existe (`AnyAsync`): rodar várias vezes não duplica. |
 | **`db.Livros.Local`** | `Data/SeedImagens.cs:104` | Olha os objetos já alterados na memória e ainda não salvos (o `SaveChanges` é só no fim). |
 | **CancellationToken** | parâmetros `cancellationToken` no `CatalogoExternoController` | Se o usuário fechar a página, a busca externa é cancelada em vez de continuar à toa. |
 | **CORS** | `Program.cs` | Permissão para outra origem (outra porta) chamar a API. Como o front é servido pela própria API, hoje não precisamos; ficou para quem abre pelo Live Server. |
@@ -280,7 +310,7 @@ No `dotnet user-secrets` de cada máquina, fora do repositório. O código só l
 Média (`AVG`) das notas de fidelidade de cada adaptação, calculada na hora pelo banco. Com uma única nota 5, um filme ficaria acima de outro avaliado por muita gente, o que não é justo. Por isso exigimos pelo menos 2 avaliações (`AdaptacaoController.cs:18`). Em caso de empate, vence o livro com a maior média de notas.
 
 **13. O que é a "avaliação dupla"?**
-Cada resenha tem duas notas: a **qualidade do livro** (obrigatória) e a **fidelidade do filme** (opcional, só se a pessoa viu uma adaptação). A API confere que a adaptação escolhida é **daquele livro** (`ReviewController.cs:122`).
+Cada resenha tem duas notas: a **qualidade do livro** (obrigatória) e a **fidelidade do filme** (opcional, só se a pessoa viu uma adaptação). A API confere que a adaptação escolhida é **daquele livro** (`ReviewController.cs:124`).
 
 **14. Como funciona a validação?**
 Data Annotations nos Models (`[Required]`, `[Range(1,5)]`…). Com `[ApiController]`, o ASP.NET valida antes do método e devolve **400** com as mensagens. Regras que dependem do banco (o livro existe? já está na estante?) ficam no controller.
@@ -298,7 +328,7 @@ Data Transfer Object: uma classe (no nosso caso, um `record`) só para **transpo
 Model em `Models/`, Controller em `Controllers/` e View em `wwwroot/` (HTML + CSS + JS). As Views falam com os Controllers por `fetch()` e JSON, em vez de Razor. As duas formas foram vistas em aula.
 
 **19. O seed não duplica os dados toda vez que a API sobe?**
-Não. Antes de inserir cada usuário, livro, filme, vínculo, resenha ou item de estante, ele confere se já existe (`SeedData.cs:146`). Testamos reiniciando várias vezes: os totais não mudam.
+Não. Antes de inserir cada usuário, livro, filme, vínculo, resenha ou item de estante, ele confere se já existe (`SeedData.cs:178`). Testamos reiniciando várias vezes: os totais não mudam.
 
 **20. E se o banco da nuvem cair durante a apresentação?**
 `/api/saude` mostra `"sem conexão"` e o motivo. As páginas mostram mensagens amigáveis em vez de quebrar. O plano B é trocar a string de conexão para o MySQL local, já populado (`ROTEIRO_DEMO.md`).

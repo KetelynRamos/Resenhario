@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livro vs. Filme · Resenhário</title>
+    <meta name="description" content="Veja se o filme fez jus ao livro, segundo quem leu e assistiu.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%230b0a08'/><text x='50' y='76' text-anchor='middle' font-family='Impact,Arial Narrow,sans-serif' font-size='74' fill='%23f2b33d'>R</text></svg>">
+    <!-- Tipografia: Bebas Neue (títulos, letra de cartaz de cinema) + Inter (texto). Sem internet, cai para fontes do sistema. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="topo">
+        <a class="marca" href="/index.html">Resenhário</a>
+        <button class="menu-botao" type="button" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu"><span></span><span></span><span></span></button>
+        <nav id="menu" aria-label="Navegação principal">
+            <a href="/index.html">Início</a>
+            <a href="/paginas/livros.html">Livros</a>
+            <a href="/paginas/filmes.html">Filmes</a>
+            <a href="/paginas/feed.html">Feed</a>
+            <a href="/paginas/ranking.html">Ranking</a>
+            <a href="/paginas/reviews.html">Resenhar</a>
+            <a href="/paginas/estante.html">Minha estante</a>
+            <a class="link-conta" href="/paginas/login.html">Entrar</a>
+        </nav>
+    </header>
+
+    <main id="pagina-adaptacao" class="pagina">
+        <section class="cabecalho-pagina">
+            <p class="sobretitulo">Livro vs. Filme</p>
+            <h1 id="adaptacao-titulo">O duelo</h1>
+            <p id="adaptacao-subtitulo">Leu o livro e viu o filme? Diga se a adaptação fez jus.</p>
+        </section>
+        <div id="adaptacao-duelo"></div>
+        <div class="adaptacao-acoes">
+            <a id="adaptacao-avaliar" class="botao" href="/paginas/reviews.html">Dar minha nota</a>
+            <a class="botao botao-fantasma" href="/paginas/ranking.html">Ver o Top do Resenhário</a>
+        </div>
+        <section class="secao pagina-estreita-conteudo">
+            <div class="titulo-secao"><div><p class="sobretitulo">O que a galera achou</p><h2>Resenhas mais curtidas</h2></div></div>
+            <div id="adaptacao-resenhas" class="lista-feed"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p><strong>Resenhário</strong> · O filme acabou. A história continua no livro.</p>
+        <p class="credito">Dados de filmes fornecidos pelo TMDB. Este site não é endossado nem certificado pelo TMDB.</p>
+    </footer>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/script.js"></script>
+</body>
+</html>

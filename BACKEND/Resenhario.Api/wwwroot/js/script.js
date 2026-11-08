@@ -11,10 +11,12 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarPaginaFilmes();
     iniciarPaginaSeries();
     iniciarLogin();
+    iniciarPerfil();
     iniciarEstante();
     iniciarResenhas();
     iniciarFeed();
     iniciarRanking();
+    iniciarAdaptacao();
 });
 
 // ---------------------------------------------------------------------
@@ -41,7 +43,7 @@ async function carregarLivrosEm(container, comEstante = false) {
     try {
         const livros = await api("/Livro");
         if (!livros.length) {
-            mostrarEstadoVazio(container, { icone: "📚", titulo: "O catálogo ainda está vazio", texto: "Pesquise no Google Books e adicione o primeiro livro." });
+            mostrarEstadoVazio(container, { titulo: "Nenhum livro por aqui ainda", texto: "Busque um livro aí em cima e seja a primeira pessoa a trazer." });
             return;
         }
         container.replaceChildren(...livros.map(l => cardLivro(l, comEstante)));
@@ -56,7 +58,7 @@ async function carregarFilmesEm(container, comEstante = false) {
     try {
         const filmes = await api("/Filme");
         if (!filmes.length) {
-            mostrarEstadoVazio(container, { icone: "🎬", titulo: "Nenhum filme no catálogo", texto: "Pesquise no TMDB e adicione o primeiro filme." });
+            mostrarEstadoVazio(container, { titulo: "Nenhum filme por aqui ainda", texto: "Busque um filme aí em cima e abra a sessão." });
             return;
         }
         container.replaceChildren(...filmes.map(f => cardFilme(f, comEstante)));
@@ -97,7 +99,7 @@ async function iniciarHome() {
         carregarDestaquesHome(),
         carregarLivrosEm(document.getElementById("inicio-livros")),
         carregarFilmesEm(document.getElementById("inicio-filmes")),
-        carregarResenhasEm(document.getElementById("inicio-feed"), 1, 3)
+        carregarResenhasEm(document.getElementById("inicio-feed"), { tamanho: 3 })
     ]);
 }
 
@@ -115,7 +117,7 @@ async function carregarDestaquesHome() {
 
         if (!ranking.length) {
             document.querySelector(".hero-destaque").hidden = true;
-            mostrarEstadoVazio(duelos, { icone: "🎬", titulo: "Ainda não há adaptações avaliadas", texto: "Escreva a primeira resenha com nota de fidelidade.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(duelos, { titulo: "Nenhum duelo avaliado ainda", texto: "Dá a primeira nota e começa a disputa.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
             return;
         }
         const [primeiro, ...outros] = ranking;
@@ -139,7 +141,7 @@ function preencherNumerosHero(numeros) {
 }
 
 // ---------------------------------------------------------------------
-// Livros: busca no Google Books (via nossa API) + catálogo
+// Livros: busca de livros (Google Books, via nossa API) + catálogo
 // ---------------------------------------------------------------------
 function iniciarPaginaLivros() {
     const form = document.getElementById("form-busca-livros");
@@ -152,16 +154,16 @@ function iniciarPaginaLivros() {
         const termo = document.getElementById("termo-livro").value.trim();
         const area = document.getElementById("resultados-busca"), msg = document.getElementById("mensagem-busca");
         if (!termo) return;
-        msg.textContent = "Pesquisando no Google Books…";
+        msg.textContent = "Procurando livros…";
         mostrarSkeleton(area, 6);
         try {
             const livros = await api(`/Livro/buscar?q=${encodeURIComponent(termo)}`);
             if (!livros.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum livro encontrado", texto: "Tente outro título ou o nome do autor." });
+                mostrarEstadoVazio(area, { titulo: "Não achamos esse livro", texto: "Tenta outro título ou o nome de quem escreveu." });
                 return;
             }
-            msg.textContent = `${livros.length} resultado(s) no Google Books.`;
+            msg.textContent = `${livros.length} ${livros.length === 1 ? "livro encontrado" : "livros encontrados"}.`;
             area.replaceChildren(...livros.map(livro => criarCardObra({
                 titulo: livro.titulo, subtitulo: livro.autor, imagem: livro.capaUrl, tipo: "Livro",
                 detalhe: livro.anoPublicacao ? `Publicado em ${livro.anoPublicacao.slice(0, 4)}` : "",
@@ -169,7 +171,7 @@ function iniciarPaginaLivros() {
             })));
         } catch (err) {
             msg.textContent = "";
-            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no Google Books falhou", texto: `${err.message} Os livros já salvos no catálogo continuam disponíveis abaixo.` });
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar livros agora. Tenta de novo em instantes; os livros que já estão aqui continuam logo abaixo." });
         }
     });
 }
@@ -179,7 +181,7 @@ async function salvarLivro(livro, botao, catalogo) {
     botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Livro", { method: "POST", body: JSON.stringify({ googleBId: livro.id, titulo: livro.titulo, autor: livro.autor || "Autor não informado", sinopse: livro.sinopse || null, isbn: livro.isbn || null, capaUrl: livro.capaUrl || null }) });
-        botao.textContent = "✓ No catálogo";
+        botao.textContent = "No catálogo";
         avisar(`“${livro.titulo}” foi adicionado ao catálogo.`);
         await carregarLivrosEm(catalogo, true);
     } catch (e) {
@@ -191,7 +193,7 @@ async function salvarLivro(livro, botao, catalogo) {
 }
 
 // ---------------------------------------------------------------------
-// Filmes: busca no TMDB, vínculo com livros e catálogo
+// Filmes: busca de filmes (TMDB, via nossa API), vínculo com livros e catálogo
 // ---------------------------------------------------------------------
 function iniciarPaginaFilmes() {
     const form = document.getElementById("form-busca-filmes");
@@ -205,16 +207,16 @@ function iniciarPaginaFilmes() {
         const termo = document.getElementById("termo-filme").value.trim();
         const area = document.getElementById("resultados-filmes"), msg = document.getElementById("mensagem-busca-filmes");
         if (!termo) return;
-        msg.textContent = "Pesquisando no TMDB…";
+        msg.textContent = "Procurando filmes…";
         mostrarSkeleton(area, 6);
         try {
             const filmes = await api(`/Filme/buscar?q=${encodeURIComponent(termo)}`);
             if (!filmes.length) {
                 msg.textContent = "";
-                mostrarEstadoVazio(area, { icone: "🔎", titulo: "Nenhum filme encontrado", texto: "Tente o título original ou outro termo." });
+                mostrarEstadoVazio(area, { titulo: "Não achamos esse filme", texto: "Tenta o título original, em inglês, ou outro nome." });
                 return;
             }
-            msg.textContent = `${filmes.length} filme(s) no TMDB.`;
+            msg.textContent = `${filmes.length} ${filmes.length === 1 ? "filme encontrado" : "filmes encontrados"}.`;
             area.replaceChildren(...filmes.map(f => criarCardObra({
                 titulo: f.titulo, imagem: f.posterUrl, tipo: "Filme",
                 subtitulo: [f.anoLancamento, f.diretor].filter(Boolean).join(" · "),
@@ -222,7 +224,7 @@ function iniciarPaginaFilmes() {
             })));
         } catch (err) {
             msg.textContent = "";
-            mostrarEstadoVazio(area, { erro: true, titulo: "A busca no TMDB falhou", texto: `${err.message} Os filmes já salvos continuam disponíveis abaixo.` });
+            mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar filmes agora. Tenta de novo em instantes; os filmes que já estão aqui continuam logo abaixo." });
         }
     });
 }
@@ -232,7 +234,7 @@ async function salvarFilme(filme, botao, catalogo) {
     botao.disabled = true; botao.textContent = "Salvando…";
     try {
         await api("/Filme", { method: "POST", body: JSON.stringify({ tmdbId: filme.tmdbId, titulo: filme.titulo, diretor: filme.diretor || null, anoLancamento: filme.anoLancamento, posterUrl: filme.posterUrl || null }) });
-        botao.textContent = "✓ No catálogo";
+        botao.textContent = "No catálogo";
         avisar(`“${filme.titulo}” foi salvo no catálogo.`);
         await carregarFilmesEm(catalogo, true);
         await iniciarVinculoAdaptacoes(true);
@@ -255,7 +257,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
         preencherSelect(filmeSelect, filmes.map(f => ({ ...f, rotulo: f.anoLancamento ? `${f.titulo} (${f.anoLancamento})` : f.titulo })), "idFilme", "rotulo", "Selecione um filme");
         renderizarAdaptacoes(lista, adaptacoes);
     } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar as adaptações", texto: e.message });
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar os duelos", texto: e.message });
     }
 
     if (somenteRecarregar || vinculoConfigurado) return;
@@ -265,7 +267,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
         if (!exigirLogin()) return;
         try {
             await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro: Number(livroSelect.value), idFilme: Number(filmeSelect.value) }) });
-            avisar("Adaptação vinculada! Agora ela pode receber notas de fidelidade.");
+            avisar("Duelo aberto! Agora é com a galera.");
             await iniciarVinculoAdaptacoes(true);
         } catch (err) { avisar(err.message, "erro"); }
     });
@@ -274,7 +276,7 @@ async function iniciarVinculoAdaptacoes(somenteRecarregar = false) {
 // Adaptações já vinculadas, cada uma no card "Livro vs. Filme".
 function renderizarAdaptacoes(lista, adaptacoes) {
     if (!adaptacoes.length) {
-        mostrarEstadoVazio(lista, { icone: "🔗", titulo: "Nenhuma adaptação vinculada", texto: "Escolha um livro e um filme acima." });
+        mostrarEstadoVazio(lista, { titulo: "Nenhum duelo aberto", texto: "Junta um livro e um filme aí em cima." });
         return;
     }
     lista.replaceChildren(...adaptacoes.map(a => criarDuelo(a)));
@@ -313,22 +315,23 @@ function iniciarLogin() {
     if (!form) return;
     const abas = document.querySelectorAll(".aba-login");
     const camposCadastro = document.getElementById("campos-cadastro");
-    const conectado = document.getElementById("conectado");
     let modoCadastro = location.hash === "#cadastro";
 
+    // Quem já está logado não precisa desta tela: vai direto para o perfil.
+    if (usuarioAtual()) { location.replace("/paginas/perfil.html"); return; }
+
     const render = () => {
-        const usuario = usuarioAtual();
-        form.hidden = !!usuario;
-        document.querySelector(".abas-login").hidden = !!usuario;
-        conectado.hidden = !usuario;
-        if (usuario) document.getElementById("conectado-nome").textContent = usuario.nome;
         camposCadastro.hidden = !modoCadastro;
         document.getElementById("nome").required = modoCadastro;
         form.querySelector('button[type="submit"]').textContent = modoCadastro ? "Criar minha conta" : "Entrar";
+        document.getElementById("titulo-login").textContent = modoCadastro ? "Bem-vindo(a) à sessão" : "Bora pra sessão";
+        document.getElementById("subtitulo-login").textContent = modoCadastro
+            ? "Leva menos de um minuto. Depois é só escolher o primeiro livro."
+            : "Entre para avaliar, montar sua estante e conversar com a galera.";
         abas.forEach(aba => aba.classList.toggle("ativa", (aba.dataset.modo === "cadastro") === modoCadastro));
     };
     abas.forEach(aba => aba.addEventListener("click", () => { modoCadastro = aba.dataset.modo === "cadastro"; render(); }));
-    document.getElementById("sair-conta").addEventListener("click", () => { sair(); avisar("Você saiu da conta."); render(); });
+    montarColagemLogin();
     render();
 
     form.addEventListener("submit", async e => {
@@ -340,6 +343,8 @@ function iniciarLogin() {
         try {
             const usuario = await api(modoCadastro ? "/Auth/cadastro" : "/Auth/login", { method: "POST", body: JSON.stringify(dados) });
             localStorage.setItem(SESSION_KEY, JSON.stringify(usuario));
+            // Guarda também o avatar, para o menu já aparecer com a foto.
+            try { atualizarSessao({ avatar: (await api("/Usuario/me")).avatar }); } catch { /* sem avatar, ficam as iniciais */ }
             avisar(modoCadastro ? "Conta criada! Bem-vindo(a) ao Resenhário." : `Bem-vindo(a) de volta, ${usuario.nome.split(" ")[0]}!`);
             setTimeout(() => location.href = "/index.html", 700);
         } catch (err) {
@@ -347,6 +352,181 @@ function iniciarLogin() {
             botao.disabled = false;
         }
     });
+}
+
+// ---------------------------------------------------------------------
+// Página do duelo: card Livro vs. Filme + resenhas mais curtidas dele
+// ---------------------------------------------------------------------
+async function iniciarAdaptacao() {
+    if (!document.getElementById("pagina-adaptacao")) return;
+    const id = Number(new URLSearchParams(location.search).get("id"));
+    const areaDuelo = document.getElementById("adaptacao-duelo");
+    const lista = document.getElementById("adaptacao-resenhas");
+    mostrarSkeleton(areaDuelo, 1, "duelo");
+    try {
+        const item = await api(`/Adaptacao/${id}`);
+        document.title = `${item.tituloLivro} vs. ${item.tituloFilme} · Resenhário`;
+        document.getElementById("adaptacao-titulo").textContent = item.tituloLivro;
+        document.getElementById("adaptacao-subtitulo").textContent =
+            `No cinema: ${item.tituloFilme}${item.anoLancamento ? ` (${item.anoLancamento})` : ""}${item.diretor ? `, de ${item.diretor}` : ""}.`;
+        areaDuelo.replaceChildren(criarDuelo(item, true, true));
+        const avaliar = `/paginas/reviews.html?livro=${item.idLivro}&adaptacao=${item.idAdaptacoes}`;
+        document.getElementById("adaptacao-avaliar").href = avaliar;
+        await carregarResenhasEm(lista, { idAdaptacao: id, ordem: "curtidas", tamanho: 10,
+            vazio: { titulo: "Ninguém avaliou esse duelo ainda", texto: "Viu o filme e leu o livro? A primeira opinião é sua.", botao: { texto: "Dar minha nota", href: avaliar } } });
+    } catch {
+        areaDuelo.replaceChildren();
+        lista.replaceChildren();
+        mostrarEstadoVazio(areaDuelo, { erro: true, titulo: "Não achamos esse duelo", texto: "Ele pode ter sido removido. Que tal ver o Top do Resenhário?", botao: { texto: "Ver o Top", href: "/paginas/ranking.html" } });
+    }
+}
+
+// ---------------------------------------------------------------------
+// Meu perfil: dados, avatar e o accordion "Conta" com o Sair
+// ---------------------------------------------------------------------
+const AVATARES_PRONTOS = [1, 2, 3, 4, 5, 6, 7, 8].map(n => `/img/avatares/avatar-${n}.svg`);
+
+async function iniciarPerfil() {
+    if (!document.getElementById("perfil")) return;
+    if (!usuarioAtual()) { location.replace("/paginas/login.html"); return; }
+
+    let perfil;
+    try {
+        perfil = await api("/Usuario/me");
+    } catch (e) {
+        avisar(e.message, "erro");
+        return;
+    }
+    const form = document.getElementById("form-perfil");
+    const campoNome = document.getElementById("perfil-campo-nome");
+    const campoBio = document.getElementById("perfil-campo-bio");
+    const campoFavorito = document.getElementById("perfil-campo-favorito");
+    const contadorBio = document.getElementById("contador-bio");
+
+    campoNome.value = perfil.nome;
+    campoBio.value = perfil.bio || "";
+    campoFavorito.value = perfil.livroFavorito || "";
+    contadorBio.textContent = `${campoBio.value.length}/280`;
+    campoBio.addEventListener("input", () => contadorBio.textContent = `${campoBio.value.length}/280`);
+    document.getElementById("perfil-email").textContent = perfil.email;
+    renderizarTopoPerfil(perfil);
+    renderizarEscolhaAvatar(perfil);
+
+    // Sugestões de livros do catálogo no campo "Livro favorito".
+    api("/Livro").then(livros => document.getElementById("lista-livros-perfil")
+        .replaceChildren(...livros.map(l => new Option(l.titulo)))).catch(() => {});
+
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        const dados = { nome: campoNome.value.trim(), bio: campoBio.value.trim() || null, livroFavorito: campoFavorito.value.trim() || null };
+        try {
+            await api("/Usuario/me", { method: "PUT", body: JSON.stringify(dados) });
+            Object.assign(perfil, dados);
+            atualizarSessao({ nome: dados.nome });
+            renderizarTopoPerfil(perfil);
+            atualizarLinkConta();
+            avisar("Perfil atualizado.");
+        } catch (err) { avisar(err.message, "erro"); }
+    });
+
+    // Foto enviada: reduzida no navegador antes de ir para o servidor.
+    document.getElementById("foto-avatar").addEventListener("change", async e => {
+        const arquivo = e.target.files[0];
+        e.target.value = "";
+        if (!arquivo) return;
+        try {
+            await salvarAvatar(perfil, await reduzirFoto(arquivo));
+            avisar("Foto atualizada.");
+        } catch (err) { avisar(err.message || "Não deu para usar essa foto. Tenta outra.", "erro"); }
+    });
+    document.getElementById("remover-avatar").addEventListener("click", async () => {
+        try { await salvarAvatar(perfil, null); avisar("Agora seu avatar são suas iniciais."); }
+        catch (err) { avisar(err.message, "erro"); }
+    });
+    document.getElementById("sair-conta").addEventListener("click", () => {
+        sair();
+        location.href = "/index.html";
+    });
+}
+
+function renderizarTopoPerfil(perfil) {
+    document.getElementById("perfil-avatar").replaceChildren(criarAvatar(perfil.nome, perfil.avatar));
+    document.getElementById("perfil-nome").textContent = perfil.nome;
+    document.getElementById("perfil-bio").textContent = perfil.bio || "Conte em uma frase quem você é na sessão.";
+    document.getElementById("perfil-bio").classList.toggle("vazio", !perfil.bio);
+    const desde = new Date(perfil.dataCadastro + (perfil.dataCadastro.endsWith("Z") ? "" : "Z"));
+    document.getElementById("perfil-desde").textContent = `Na sessão desde ${desde.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}`;
+    const numeros = [[perfil.totalResenhas, perfil.totalResenhas === 1 ? "resenha" : "resenhas"],
+        [perfil.curtidasRecebidas, perfil.curtidasRecebidas === 1 ? "curtida recebida" : "curtidas recebidas"]];
+    if (perfil.livroFavorito) numeros.push(["Favorito", perfil.livroFavorito]);
+    document.getElementById("perfil-numeros").replaceChildren(...numeros.map(([valor, rotulo]) => {
+        const item = el("li");
+        item.append(el("strong", "", String(valor)), el("span", "", rotulo));
+        return item;
+    }));
+}
+
+function renderizarEscolhaAvatar(perfil) {
+    const area = document.getElementById("avatares");
+    area.replaceChildren(...AVATARES_PRONTOS.map((url, i) => {
+        const botao = el("button", "avatar-opcao");
+        botao.type = "button";
+        botao.setAttribute("role", "radio");
+        botao.setAttribute("aria-checked", String(perfil.avatar === url));
+        botao.setAttribute("aria-label", `Avatar ${i + 1}`);
+        const img = el("img");
+        img.src = url;
+        img.alt = "";
+        botao.appendChild(img);
+        botao.addEventListener("click", async () => {
+            try { await salvarAvatar(perfil, url); avisar("Avatar atualizado."); }
+            catch (err) { avisar(err.message, "erro"); }
+        });
+        return botao;
+    }));
+}
+
+async function salvarAvatar(perfil, avatar) {
+    await api("/Usuario/me/avatar", { method: "PUT", body: JSON.stringify({ avatar }) });
+    // Foto enviada: o endereço público muda a cada foto (para o navegador não usar a antiga).
+    perfil.avatar = avatar && avatar.startsWith("data:") ? `/api/Usuario/${perfil.idUsuario}/avatar?v=${avatar.length}` : avatar;
+    atualizarSessao({ avatar: perfil.avatar });
+    renderizarTopoPerfil(perfil);
+    renderizarEscolhaAvatar(perfil);
+    atualizarLinkConta();
+}
+
+// Recorta a foto no centro em formato quadrado e reduz para 256 px (JPEG),
+// deixando o arquivo pequeno (algumas dezenas de KB) antes de enviar.
+function reduzirFoto(arquivo) {
+    return new Promise((resolve, reject) => {
+        if (!arquivo.type.startsWith("image/")) return reject(new Error("Escolha um arquivo de imagem."));
+        const img = new Image();
+        img.onload = () => {
+            const lado = Math.min(img.width, img.height);
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = 256;
+            canvas.getContext("2d").drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256);
+            URL.revokeObjectURL(img.src);
+            resolve(canvas.toDataURL("image/jpeg", 0.85));
+        };
+        img.onerror = () => reject(new Error("Não deu para abrir essa imagem. Tenta outra."));
+        img.src = URL.createObjectURL(arquivo);
+    });
+}
+
+// Colagem de pôsteres ao lado do login: os filmes do pódio do Top do Resenhário.
+async function montarColagemLogin() {
+    const colagem = document.getElementById("login-colagem");
+    if (!colagem) return;
+    try {
+        const ranking = (await api("/Adaptacao/ranking")).slice(0, 4);
+        colagem.replaceChildren(...ranking.map(item => {
+            const quadro = el("div", "login-poster");
+            quadro.appendChild(criarCapa(item.posterUrl, item.tituloFilme, "Filme"));
+            return quadro;
+        }));
+    } catch { colagem.hidden = true; } // sem pôsteres, o lado esquerdo continua com o texto
 }
 
 // ---------------------------------------------------------------------
@@ -360,16 +540,18 @@ async function iniciarEstante() {
     if (!area) return;
     if (!usuarioAtual()?.token) {
         document.getElementById("painel-estatisticas").hidden = true;
-        mostrarEstadoVazio(area, { icone: "🔒", titulo: "Entre para ver sua estante", texto: "Sua estante guarda o que você quer ler, está lendo e já leu.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
+        mostrarEstadoVazio(area, { titulo: "Entre para ver sua estante", texto: "Guarde o que quer ler, acompanhe o que está lendo e bata sua meta.", botao: { texto: "Entrar", href: "/paginas/login.html" } });
         return;
     }
     mostrarSkeleton(area, 8);
     try {
-        const itens = await api("/Estante");
+        const [itens, perfil] = await Promise.all([api("/Estante"), api("/Usuario/me")]);
+        estanteAtual = { itens, perfil };
+        renderizarMeta();
         renderizarEstatisticasLeitura(itens);
         configurarFiltrosEstante(area);
         if (!itens.length) {
-            mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros e filmes do catálogo para acompanhar sua leitura.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
             return;
         }
         area.replaceChildren(...itens.map(item => cardEstante(item, itens, area)));
@@ -395,6 +577,7 @@ function cardEstante(item, itens, area) {
             item.dataAtualizacao = new Date().toISOString();
             card.dataset.status = item.status;
             renderizarEstatisticasLeitura(itens);
+            renderizarMeta();
             aplicarFiltroEstante(area);
             avisar(`“${item.titulo}” agora está em “${item.status}”.`);
         } catch (err) {
@@ -414,7 +597,7 @@ function cardEstante(item, itens, area) {
             card.remove();
             renderizarEstatisticasLeitura(itens);
             avisar("Item removido da estante.");
-            if (!itens.length) mostrarEstadoVazio(area, { icone: "📚", titulo: "Sua estante está vazia", texto: "Adicione livros do catálogo.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
+            if (!itens.length) mostrarEstadoVazio(area, { titulo: "Sua estante está vazia", texto: "Bora começar? Escolha seu próximo livro.", botao: { texto: "Explorar livros", href: "/paginas/livros.html" } });
         } catch (err) { remover.disabled = false; avisar(err.message, "erro"); }
     });
     acoes.append(select, remover);
@@ -426,11 +609,11 @@ function renderizarEstatisticasLeitura(itens) {
     if (!area) return;
     const livros = itens.filter(item => item.tipo === "Livro");
     const contar = status => livros.filter(item => item.status === status).length;
-    const numeros = [["📚", "Na estante", itens.length], ["✅", "Lidos", contar("Lido")], ["📖", "Lendo", contar("Lendo")],
-        ["🔖", "Quero ler", contar("Quero ler")], ["💤", "Abandonados", contar("Abandonado")]];
-    area.replaceChildren(...numeros.map(([icone, rotulo, valor]) => {
+    const numeros = [["Na estante", itens.length], ["Lidos", contar("Lido")], ["Lendo", contar("Lendo")],
+        ["Quero ler", contar("Quero ler")], ["Abandonados", contar("Abandonado")]];
+    area.replaceChildren(...numeros.map(([rotulo, valor]) => {
         const card = el("article", "estatistica");
-        card.append(el("span", "estatistica-icone", icone), el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
+        card.append(el("strong", "", String(valor)), el("span", "estatistica-rotulo", rotulo));
         return card;
     }));
     renderizarGraficos(livros);
@@ -466,7 +649,7 @@ async function renderizarGraficos(livros) {
     for (let i = 5; i >= 0; i--) meses.push(new Date(hoje.getFullYear(), hoje.getMonth() - i, 1));
     const lidosNoMes = mes => livros.filter(l => {
         if (l.status !== "Lido") return false;
-        const data = new Date(/[zZ]$/.test(l.dataAtualizacao) ? l.dataAtualizacao : l.dataAtualizacao + "Z");
+        const data = dataDaApi(l.dataAtualizacao);
         return data.getFullYear() === mes.getFullYear() && data.getMonth() === mes.getMonth();
     }).length;
     graficos.meses?.destroy();
@@ -478,6 +661,117 @@ async function renderizarGraficos(livros) {
         },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
     });
+    // Com meta definida: linha tracejada com o ritmo mensal da meta (total ÷ 6 meses).
+    const meta = estanteAtual?.perfil?.metaLivros;
+    if (meta) {
+        graficos.meses.data.datasets.push({ type: "line", label: "Ritmo da meta", data: meses.map(() => +(meta / 6).toFixed(1)),
+            borderColor: "#ff7a86", borderDash: [6, 6], borderWidth: 2, pointRadius: 0 });
+        graficos.meses.options.plugins.legend = { display: true, position: "bottom", labels: { usePointStyle: true } };
+        graficos.meses.update();
+    }
+}
+
+// ---------------------------------------------------------------------
+// Meta de leitura: quantos livros ler nos próximos 6 meses
+// ---------------------------------------------------------------------
+let estanteAtual = null; // { itens, perfil } da página Minha estante
+
+// A API devolve datas em UTC sem o "Z"; acrescentamos para o navegador entender o fuso.
+function dataDaApi(iso) { return new Date(/[zZ]$/.test(iso) ? iso : iso + "Z"); }
+
+// Livros marcados como "Lido" a partir de uma data (dataAtualizacao = quando virou "Lido").
+function livrosLidosDesde(itens, inicio) {
+    return itens.filter(i => i.tipo === "Livro" && i.status === "Lido" && dataDaApi(i.dataAtualizacao) >= inicio).length;
+}
+
+function renderizarMeta() {
+    const area = document.getElementById("meta-leitura");
+    if (!area || !estanteAtual) return;
+    const { itens, perfil } = estanteAtual;
+    area.hidden = false;
+    const seisMesesAtras = new Date(); seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
+    const lidosUltimos6 = livrosLidosDesde(itens, seisMesesAtras);
+    const textoLidos = n => `${n} ${n === 1 ? "livro" : "livros"}`;
+
+    // Sem meta: convite para começar o desafio.
+    if (!perfil.metaLivros) {
+        const sugestao = Math.max(3, lidosUltimos6 + 2);
+        area.replaceChildren(el("p", "sobretitulo", "Desafio de leitura"),
+            el("h2", "", "Quantos livros você quer ler nos próximos 6 meses?"),
+            el("p", "texto-suave", lidosUltimos6
+                ? `Nos últimos 6 meses você leu ${textoLidos(lidosUltimos6)}. Que tal superar essa marca?`
+                : "Escolha um número possível e vá subindo. O importante é começar."),
+            criarFormMeta(sugestao));
+        return;
+    }
+
+    const inicio = dataDaApi(perfil.metaInicio);
+    const fim = new Date(inicio); fim.setMonth(fim.getMonth() + 6);
+    const lidosNaMeta = livrosLidosDesde(itens, inicio);
+    const meta = perfil.metaLivros;
+    const porcentagem = Math.min(100, Math.round(lidosNaMeta / meta * 100));
+    const diasRestantes = Math.max(0, Math.ceil((fim - new Date()) / 86400000));
+    const encerrada = diasRestantes === 0;
+    const faltam = Math.max(0, meta - lidosNaMeta);
+
+    let titulo = `${lidosNaMeta} de ${meta} livros`;
+    let frase = `Faltam ${textoLidos(faltam)} e ${diasRestantes} ${diasRestantes === 1 ? "dia" : "dias"}. Bora!`;
+    if (lidosNaMeta >= meta) { titulo = "Desafio batido!"; frase = `Você leu ${textoLidos(lidosNaMeta)} e passou da meta. Que tal subir a régua?`; }
+    else if (encerrada) { titulo = "O desafio acabou"; frase = `Você leu ${textoLidos(lidosNaMeta)} de ${meta}. Bora para o próximo?`; }
+
+    const barra = el("div", "meta-barra");
+    barra.setAttribute("role", "progressbar");
+    barra.setAttribute("aria-valuemin", "0");
+    barra.setAttribute("aria-valuemax", String(meta));
+    barra.setAttribute("aria-valuenow", String(lidosNaMeta));
+    barra.style.setProperty("--progresso", `${porcentagem}%`);
+
+    // Comparação com os 6 meses anteriores ao início do desafio.
+    const antesInicio = new Date(inicio); antesInicio.setMonth(antesInicio.getMonth() - 6);
+    const lidosAntes = itens.filter(i => i.tipo === "Livro" && i.status === "Lido"
+        && dataDaApi(i.dataAtualizacao) >= antesInicio && dataDaApi(i.dataAtualizacao) < inicio).length;
+    const ritmoNecessario = encerrada ? 0 : (faltam / Math.max(1, diasRestantes / 30)).toFixed(1).replace(".", ",");
+    const comparacao = el("div", "meta-comparacao");
+    [[String(lidosAntes), "lidos nos 6 meses antes do desafio"],
+     [String(lidosNaMeta), "lidos desde que você topou"],
+     [faltam && !encerrada ? ritmoNecessario : "0", "livros por mês para chegar lá"]].forEach(([valor, rotulo]) => {
+        const item = el("div");
+        item.append(el("strong", "", valor), el("span", "", rotulo));
+        comparacao.appendChild(item);
+    });
+
+    const cabecalho = el("div", "meta-cabecalho");
+    const textos = el("div");
+    textos.append(el("p", "sobretitulo", `Desafio de leitura · até ${fim.toLocaleDateString("pt-BR", { day: "numeric", month: "long" })}`),
+        el("h2", "", titulo), el("p", "texto-suave", frase));
+    const mudar = el("button", "botao botao-fantasma botao-pequeno", encerrada || lidosNaMeta >= meta ? "Novo desafio" : "Mudar meta");
+    mudar.type = "button";
+    const form = criarFormMeta(meta);
+    form.hidden = true;
+    mudar.addEventListener("click", () => { form.hidden = !form.hidden; });
+    cabecalho.append(textos, mudar);
+    area.replaceChildren(cabecalho, barra, comparacao, form);
+}
+
+function criarFormMeta(valorInicial) {
+    const form = el("form", "meta-form");
+    const campo = el("input");
+    campo.type = "number"; campo.min = "1"; campo.max = "100"; campo.required = true; campo.value = valorInicial;
+    campo.setAttribute("aria-label", "Quantidade de livros em 6 meses");
+    const botao = el("button", "", "Topar o desafio");
+    botao.type = "submit";
+    form.append(campo, el("span", "texto-suave", "livros em 6 meses"), botao);
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        try {
+            await api("/Usuario/me/meta", { method: "PUT", body: JSON.stringify({ metaLivros: Number(campo.value) }) });
+            estanteAtual.perfil = await api("/Usuario/me");
+            renderizarMeta();
+            renderizarEstatisticasLeitura(estanteAtual.itens);
+            avisar("Desafio aceito! A contagem começa hoje.");
+        } catch (err) { avisar(err.message, "erro"); }
+    });
+    return form;
 }
 
 // Filtros da prateleira: Todos, cada status de leitura ou só filmes.
@@ -526,12 +820,23 @@ async function iniciarResenhas() {
 
     const atualizarAdaptacoes = () => {
         const idLivro = Number(livroSelect.value || 0);
-        adaptacaoSelect.replaceChildren(new Option("Não vi nenhuma adaptação", ""),
+        adaptacaoSelect.replaceChildren(new Option("Ainda não vi o filme", ""),
             ...adaptacoesCache.filter(a => a.idLivro === idLivro).map(a => new Option(a.tituloFilme, a.idAdaptacoes)));
         campoFidelidade.hidden = true;
     };
     livroSelect.addEventListener("change", atualizarAdaptacoes);
     adaptacaoSelect.addEventListener("change", () => campoFidelidade.hidden = !adaptacaoSelect.value);
+
+    // Vindo da página de um duelo (reviews.html?livro=5&adaptacao=7): já deixa livro e filme escolhidos.
+    const parametros = new URLSearchParams(location.search);
+    if (parametros.get("livro")) {
+        livroSelect.value = parametros.get("livro");
+        atualizarAdaptacoes();
+        if (parametros.get("adaptacao")) {
+            adaptacaoSelect.value = parametros.get("adaptacao");
+            campoFidelidade.hidden = !adaptacaoSelect.value;
+        }
+    }
 
     form.addEventListener("submit", async e => {
         e.preventDefault();
@@ -540,14 +845,14 @@ async function iniciarResenhas() {
         const notaLivro = valorEstrelas("nota-livro");
         const notaFidelidade = idAdaptacao ? valorEstrelas("nota-fidelidade") : null;
         const texto = comentario.value.trim();
-        if (!idLivro) { avisar("Selecione um livro.", "erro"); return; }
-        if (!notaLivro) { avisar("Dê de 1 a 5 estrelas para o livro.", "erro"); return; }
-        if (idAdaptacao && !notaFidelidade) { avisar("Dê de 1 a 5 estrelas para a fidelidade do filme.", "erro"); return; }
+        if (!idLivro) { avisar("Escolha um livro primeiro.", "erro"); return; }
+        if (!notaLivro) { avisar("Faltou dar as estrelas do livro.", "erro"); return; }
+        if (idAdaptacao && !notaFidelidade) { avisar("Faltou dizer se o filme foi fiel.", "erro"); return; }
         try {
             await api("/Review", { method: "POST", body: JSON.stringify({ idLivro, idAdaptacao: idAdaptacao || null, notaLivro, comentario: texto, notaFidelidade, assistiuFilme: !!idAdaptacao }) });
             form.reset(); atualizarAdaptacoes();
             estrelasLivro.limpar(); estrelasFidelidade.limpar(); contador.textContent = "0/5000";
-            avisar("Resenha publicada! Ela já aparece no feed.");
+            avisar("Resenha no ar! Já está no feed.");
             await carregarUltimasResenhas();
         } catch (err) { avisar(err.message, "erro"); }
     });
@@ -557,30 +862,32 @@ async function iniciarResenhas() {
 async function carregarUltimasResenhas() {
     const lista = document.getElementById("ultimas-resenhas");
     if (!lista) return;
-    await carregarResenhasEm(lista, 1, 4);
+    await carregarResenhasEm(lista, { tamanho: 4 });
 }
 
 // ---------------------------------------------------------------------
 // Feed da comunidade
 // ---------------------------------------------------------------------
-async function carregarResenhasEm(lista, pagina, tamanho, acrescentar = false) {
+// Carrega resenhas do feed numa lista. opcoes: { pagina, tamanho, acrescentar, ordem, idAdaptacao, vazio }
+async function carregarResenhasEm(lista, opcoes = {}) {
+    const { pagina = 1, tamanho = 10, acrescentar = false, ordem = "recentes", idAdaptacao = null } = opcoes;
     if (!acrescentar) mostrarSkeleton(lista, Math.min(tamanho, 4), "resenha");
     try {
-        const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=${tamanho}`);
+        const filtro = idAdaptacao ? `&idAdaptacao=${idAdaptacao}` : "";
+        const dados = await api(`/Review/feed?pagina=${pagina}&tamanho=${tamanho}&ordem=${ordem}${filtro}`);
         if (!dados.itens.length && !acrescentar) {
-            mostrarEstadoVazio(lista, { icone: "✍️", titulo: "Ainda não há resenhas", texto: "Seja a primeira pessoa a comparar um livro com o filme.", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(lista, opcoes.vazio || { titulo: "Ninguém resenhou ainda", texto: "Que tal ser a primeira pessoa a dar a opinião?", botao: { texto: "Escrever resenha", href: "/paginas/reviews.html" } });
             return dados;
         }
         const cards = dados.itens.map(cardResenha);
         if (acrescentar) lista.append(...cards); else lista.replaceChildren(...cards);
         return dados;
     } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não foi possível carregar o feed", texto: e.message });
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar o feed", texto: e.message });
         return null;
     }
 }
 
-// Card de resenha do feed social.
 function cardResenha(review) {
     const card = el("article", "card-resenha");
 
@@ -588,9 +895,12 @@ function cardResenha(review) {
     const topo = el("header", "resenha-topo");
     const quem = el("div", "resenha-quem");
     const linha = el("span", "resenha-acao", "resenhou ");
-    linha.append(el("b", "", review.titulo || "um livro"), ` · ${dataRelativa(review.dataCriacao)}`);
+    // Resenha que avaliou um filme: o nome do livro leva ao duelo Livro vs. Filme.
+    const nomeLivro = review.idAdaptacao ? el("a", "", review.titulo) : el("b", "", review.titulo || "um livro");
+    if (review.idAdaptacao) nomeLivro.href = `/paginas/adaptacao.html?id=${review.idAdaptacao}`;
+    linha.append(nomeLivro, ` · ${dataRelativa(review.dataCriacao)}`);
     quem.append(el("strong", "", review.nomeUsuario), linha);
-    topo.append(criarAvatar(review.nomeUsuario), quem);
+    topo.append(criarAvatar(review.nomeUsuario, review.avatarUsuario), quem);
 
     // Capa do livro (e pôster do filme, se a resenha avaliou uma adaptação)
     const capas = el("div", "resenha-capas");
@@ -605,13 +915,13 @@ function cardResenha(review) {
 
     // Notas: estrelas para o livro e "chip" de fidelidade para o filme
     const notas = el("div", "resenha-notas");
-    const chipLivro = el("span", "chip chip-livro", "📖 Livro ");
+    const chipLivro = el("span", "chip chip-livro", "Livro ");
     chipLivro.appendChild(criarEstrelas(review.notaLivro));
     notas.appendChild(chipLivro);
     if (review.tituloFilme && review.notaFidelidade != null) {
         // Mostra o ano só se ele ainda não estiver no título (ex.: "Duna (1984)").
         const ano = review.anoFilme && !review.tituloFilme.includes(String(review.anoFilme)) ? ` (${review.anoFilme})` : "";
-        const chipFilme = el("span", "chip chip-filme", `🎬 Fidelidade de ${review.tituloFilme}${ano}: `);
+        const chipFilme = el("span", "chip chip-filme", `Fidelidade de ${review.tituloFilme}${ano}: `);
         chipFilme.appendChild(el("b", "", `${review.notaFidelidade}/5`));
         notas.appendChild(chipFilme);
     }
@@ -634,8 +944,144 @@ function cardResenha(review) {
 
     const corpo = el("div", "resenha-corpo");
     corpo.append(capas, conteudo);
-    card.append(topo, corpo);
+    card.append(topo, corpo, criarAcoesResenha(review));
     return card;
+}
+
+// ---------------------------------------------------------------------
+// Interações do feed: curtir, comentar e compartilhar
+// ---------------------------------------------------------------------
+function criarAcoesResenha(review) {
+    const barra = el("div", "resenha-acoes");
+    const conversa = el("div", "resenha-conversa");
+    conversa.hidden = true;
+
+    // Curtir: muda na hora e desfaz se o servidor recusar.
+    const curtir = el("button", "acao");
+    curtir.type = "button";
+    const contadorCurtidas = el("span", "", String(review.totalCurtidas));
+    curtir.append(criarIcone("coracao"), contadorCurtidas);
+    const pintarCurtida = () => {
+        curtir.setAttribute("aria-pressed", String(review.curtidoPorMim));
+        curtir.setAttribute("aria-label", review.curtidoPorMim ? "Descurtir" : "Curtir");
+        contadorCurtidas.textContent = String(review.totalCurtidas);
+    };
+    pintarCurtida();
+    curtir.addEventListener("click", async () => {
+        if (!exigirLogin()) return;
+        const curtindo = !review.curtidoPorMim;
+        review.curtidoPorMim = curtindo;
+        review.totalCurtidas += curtindo ? 1 : -1;
+        pintarCurtida();
+        if (curtindo) { curtir.classList.remove("pulsar"); void curtir.offsetWidth; curtir.classList.add("pulsar"); }
+        try {
+            await api(`/Review/${review.idReviews}/curtida`, { method: curtindo ? "POST" : "DELETE" });
+        } catch (e) {
+            review.curtidoPorMim = !curtindo;
+            review.totalCurtidas += curtindo ? -1 : 1;
+            pintarCurtida();
+            avisar(e.message, "erro");
+        }
+    });
+
+    // Comentar: abre e fecha a conversa da resenha.
+    const comentar = el("button", "acao");
+    comentar.type = "button";
+    const contadorComentarios = el("span", "", String(review.totalComentarios));
+    comentar.append(criarIcone("balao"), contadorComentarios);
+    comentar.setAttribute("aria-expanded", "false");
+    comentar.setAttribute("aria-label", "Comentários");
+    comentar.addEventListener("click", async () => {
+        conversa.hidden = !conversa.hidden;
+        comentar.setAttribute("aria-expanded", String(!conversa.hidden));
+        if (!conversa.hidden && !conversa.dataset.carregada) {
+            conversa.dataset.carregada = "sim";
+            await montarConversa(review, conversa, total => contadorComentarios.textContent = String(total));
+        }
+    });
+
+    // Compartilhar: link do duelo (se a resenha avaliou um filme) ou do feed.
+    const compartilhar = el("button", "acao acao-compartilhar");
+    compartilhar.type = "button";
+    compartilhar.append(criarIcone("compartilhar"), el("span", "", "Compartilhar"));
+    compartilhar.addEventListener("click", async () => {
+        const link = new URL(review.idAdaptacao ? `/paginas/adaptacao.html?id=${review.idAdaptacao}` : "/paginas/feed.html", location.origin).href;
+        const texto = `${review.nomeUsuario.split(" ")[0]} resenhou ${review.titulo} no Resenhário`;
+        try {
+            if (navigator.share) await navigator.share({ title: "Resenhário", text: texto, url: link });
+            else { await navigator.clipboard.writeText(link); avisar("Link copiado! É só colar onde quiser."); }
+        } catch { /* a pessoa cancelou o compartilhamento */ }
+    });
+
+    barra.append(curtir, comentar, compartilhar);
+    const bloco = el("div", "resenha-interacoes");
+    bloco.append(barra, conversa);
+    return bloco;
+}
+
+async function montarConversa(review, area, atualizarTotal) {
+    const lista = el("div", "comentarios");
+    area.replaceChildren(lista);
+    const desenhar = comentarios => {
+        if (!comentarios.length) { lista.replaceChildren(el("p", "comentarios-vazio", "Ninguém comentou ainda. Puxa o assunto!")); return; }
+        lista.replaceChildren(...comentarios.map(c => criarComentario(c, review, comentarios, desenhar, atualizarTotal)));
+    };
+    let comentarios = [];
+    try {
+        comentarios = await api(`/Review/${review.idReviews}/comentarios`);
+        desenhar(comentarios);
+    } catch (e) { lista.replaceChildren(el("p", "comentarios-vazio", e.message)); }
+
+    if (!usuarioAtual()) {
+        const convite = el("a", "comentarios-entrar", "Entre para comentar");
+        convite.href = "/paginas/login.html";
+        area.appendChild(convite);
+        return;
+    }
+    const form = el("form", "comentario-form");
+    const campo = el("input");
+    campo.type = "text"; campo.maxLength = 1000; campo.required = true;
+    campo.placeholder = "Escreva um comentário…";
+    campo.setAttribute("aria-label", "Seu comentário");
+    const enviar = el("button", "botao-pequeno", "Enviar");
+    enviar.type = "submit";
+    form.append(criarAvatar(usuarioAtual().nome, usuarioAtual().avatar), campo, enviar);
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        enviar.disabled = true;
+        try {
+            const novo = await api(`/Review/${review.idReviews}/comentarios`, { method: "POST", body: JSON.stringify({ texto: campo.value }) });
+            comentarios.push(novo);
+            desenhar(comentarios);
+            atualizarTotal(comentarios.length);
+            campo.value = "";
+        } catch (err) { avisar(err.message, "erro"); }
+        finally { enviar.disabled = false; }
+    });
+    area.appendChild(form);
+}
+
+function criarComentario(c, review, comentarios, desenhar, atualizarTotal) {
+    const item = el("div", "comentario");
+    const balao = el("div", "comentario-balao");
+    const cabecalho = el("p", "comentario-autor");
+    cabecalho.append(el("strong", "", c.nomeUsuario), ` · ${dataRelativa(c.dataCriacao)}`);
+    balao.append(cabecalho, el("p", "", c.texto));
+    if (c.ehMeu) {
+        const apagar = el("button", "comentario-apagar", "Apagar");
+        apagar.type = "button";
+        apagar.addEventListener("click", async () => {
+            try {
+                await api(`/Review/${review.idReviews}/comentarios/${c.idComentario}`, { method: "DELETE" });
+                comentarios.splice(comentarios.indexOf(c), 1);
+                desenhar(comentarios);
+                atualizarTotal(comentarios.length);
+            } catch (err) { avisar(err.message, "erro"); }
+        });
+        balao.appendChild(apagar);
+    }
+    item.append(criarAvatar(c.nomeUsuario, c.avatarUsuario), balao);
+    return item;
 }
 
 // Comparativo entre leitores: a nota desta pessoa × a média da comunidade para o mesmo livro.
@@ -643,7 +1089,7 @@ function criarComparativo(review) {
     const caixa = el("p", "resenha-comparativo");
     const primeiroNome = review.nomeUsuario.split(" ")[0];
     if (review.totalResenhasLivro <= 1 || review.mediaNotaLivro == null) {
-        caixa.textContent = "✨ Primeira resenha deste livro na comunidade";
+        caixa.textContent = "Primeira resenha deste livro na comunidade";
         return caixa;
     }
     const diferenca = review.notaLivro - review.mediaNotaLivro;
@@ -661,15 +1107,26 @@ async function iniciarFeed() {
     const lista = document.getElementById("feed-resenhas");
     if (!lista) return;
     const botaoMais = document.getElementById("feed-mais");
-    let pagina = 1;
-    const dados = await carregarResenhasEm(lista, pagina, 10);
-    botaoMais.hidden = !dados || dados.totalPaginas <= 1;
+    let pagina = 1, ordem = "recentes";
+
+    const carregar = async (acrescentar = false) => {
+        const dados = await carregarResenhasEm(lista, { pagina, tamanho: 10, acrescentar, ordem });
+        botaoMais.hidden = !dados || pagina >= dados.totalPaginas;
+    };
+    // Abas "Mais recentes" / "Mais curtidas"
+    document.querySelectorAll(".aba-feed").forEach(aba => aba.addEventListener("click", () => {
+        document.querySelectorAll(".aba-feed").forEach(a => a.setAttribute("aria-selected", String(a === aba)));
+        ordem = aba.dataset.ordem;
+        pagina = 1;
+        carregar();
+    }));
     botaoMais.addEventListener("click", async () => {
         botaoMais.disabled = true;
-        const proxima = await carregarResenhasEm(lista, ++pagina, 10, true);
+        pagina++;
+        await carregar(true);
         botaoMais.disabled = false;
-        botaoMais.hidden = !proxima || pagina >= proxima.totalPaginas;
     });
+    await carregar();
 }
 
 // ---------------------------------------------------------------------
@@ -685,7 +1142,7 @@ async function iniciarRanking() {
         const ranking = (await api("/Adaptacao/ranking")).slice(0, 10);
         if (!ranking.length) {
             lista.replaceChildren();
-            mostrarEstadoVazio(podio, { icone: "🏆", titulo: "O ranking ainda está vazio", texto: "Uma adaptação entra no ranking quando recebe pelo menos 2 notas de fidelidade.", botao: { texto: "Avaliar uma adaptação", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(podio, { titulo: "O pódio ainda está vazio", texto: "Dá a sua nota e ajuda a montar o Top do Resenhário.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
             return;
         }
         // No pódio o 1º lugar fica no meio: ordem visual 2º, 1º, 3º.
@@ -717,8 +1174,13 @@ function criarLugarPodio(item, posicao) {
     nota.append(el("strong", "", formatarMedia(item.mediaFidelidade)), criarEstrelas(item.mediaFidelidade),
         el("small", "", `fidelidade · ${item.totalAvaliacoes} ${item.totalAvaliacoes === 1 ? "avaliação" : "avaliações"}`));
 
+    const titulo = el("h3");
+    const link = el("a", "duelo-link", item.tituloFilme);
+    link.href = `/paginas/adaptacao.html?id=${item.idAdaptacoes}`;
+    titulo.appendChild(link);
+    lugar.classList.add("duelo-clicavel");
     lugar.append(imagens,
-        el("h3", "", item.tituloFilme),
+        titulo,
         el("p", "podio-sub", `do livro de ${item.autorLivro}`),
         nota,
         el("div", "podio-degrau"));

@@ -14,7 +14,9 @@ O usuário pode:
 - **vincular** um livro às suas adaptações (um livro pode ter várias, como *Duna* de 1984 e de 2021);
 - organizar a **estante virtual** com os status *Quero ler*, *Lendo*, *Lido* e *Abandonado*;
 - publicar **resenhas com avaliação dupla**: nota da obra (1 a 5) e, se viu o filme, nota de **fidelidade** da adaptação (1 a 5);
-- acompanhar o **feed** da comunidade, com comparativo entre a nota de cada leitor e a média da comunidade;
+- acompanhar o **feed** da comunidade, com comparativo entre a nota de cada leitor e a média da comunidade, **curtir**, **comentar** e compartilhar resenhas;
+- abrir a página de cada **duelo Livro vs. Filme**, com as resenhas mais curtidas daquela adaptação;
+- personalizar o **perfil** (frase, livro favorito, avatar pronto ou foto) e criar um **desafio de leitura** de 6 meses;
 - ver o **ranking** das adaptações mais fiéis (pódio) e as **estatísticas de leitura** em gráficos.
 
 **Fora do escopo** (definido no documento de escopo): leitor de e-books, streaming de vídeo, venda de livros ou ingressos e aplicativo mobile nativo.
@@ -119,7 +121,7 @@ sequenceDiagram
 
 ## 3. Modelo de dados (MER)
 
-As tabelas são criadas pelos scripts `BANCO DE DADOS/01`, `05`, `08` e `09`. As seis tabelas previstas no escopo estão presentes: **Usuarios, Livros, Filmes, Adaptacoes, Reviews e Estante** (no banco, `Estantes`). `Series` é um extra, fora do escopo e escondido do menu.
+As tabelas são criadas pelos scripts `BANCO DE DADOS/01`, `05`, `08`, `09` e `10`. As seis tabelas previstas no escopo estão presentes: **Usuarios, Livros, Filmes, Adaptacoes, Reviews e Estante** (no banco, `Estantes`). `Series` é um extra, fora do escopo e escondido do menu.
 
 ```mermaid
 erDiagram
@@ -129,6 +131,24 @@ erDiagram
         varchar Email UK
         varchar SenhaHash "hash BCrypt"
         datetime DataCadastro
+        varchar Bio
+        varchar LivroFavorito
+        mediumtext Avatar "avatar pronto ou foto"
+        int MetaLivros "livros em 6 meses"
+        datetime MetaInicio
+    }
+    CURTIDAS {
+        int IdCurtida PK
+        int IdReview FK
+        int IdUsuario FK
+        datetime DataCriacao
+    }
+    COMENTARIOS {
+        int IdComentario PK
+        int IdReview FK
+        int IdUsuario FK
+        varchar Texto
+        datetime DataCriacao
     }
     LIVROS {
         int IdLivros PK
@@ -180,6 +200,10 @@ erDiagram
     }
 
     USUARIOS ||--o{ REVIEWS : escreve
+    REVIEWS ||--o{ CURTIDAS : recebe
+    USUARIOS ||--o{ CURTIDAS : curte
+    REVIEWS ||--o{ COMENTARIOS : recebe
+    USUARIOS ||--o{ COMENTARIOS : escreve
     USUARIOS ||--o{ ESTANTES : "monta"
     LIVROS ||--o{ ADAPTACOES : "é adaptado em"
     FILMES ||--o{ ADAPTACOES : adapta
@@ -196,6 +220,8 @@ erDiagram
 - **Reviews** guarda a **avaliação dupla**: `NotaLivro` é obrigatória; `NotaFidelidade` e `IdAdaptacao` só são preenchidas se a pessoa viu uma adaptação **daquele livro** (regra conferida no `ReviewController`).
 - **Estantes** guarda um item por linha (livro, filme ou série). Os status válidos ficam no Model `Estante`: livro aceita *Quero ler / Lendo / Lido / Abandonado*; filme aceita *Quero ver / Assistindo / Assistido*.
 - **Usuarios.Email** tem índice único (`UQ_Usuarios_Email`).
+- **Curtidas** tem índice único em (IdReview, IdUsuario): cada pessoa curte uma resenha uma vez só. Curtidas e comentários usam `ON DELETE CASCADE`: se a resenha for apagada, eles vão junto.
+- A **meta de leitura** fica no próprio usuário (`MetaLivros` + `MetaInicio`); o progresso é calculado a partir dos livros marcados como "Lido" na estante.
 - As médias **não são guardadas**: são calculadas na hora com `Average()` do EF Core (vira `AVG()` no SQL), então estão sempre atualizadas.
 
 ---
@@ -210,7 +236,11 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 |---|---|---|---|
 | POST | `/api/Auth/cadastro` | Cria conta (senha com BCrypt) e devolve o token | **201**, 400, 409 (e-mail já existe) |
 | POST | `/api/Auth/login` | Confere a senha e devolve o token JWT (8 h) | **200**, 400, 401 |
-| GET 🔒 | `/api/Usuario/me` | Dados do usuário logado | **200**, 401, 404 |
+| GET 🔒 | `/api/Usuario/me` | Perfil do usuário logado (frase, avatar, meta, nº de resenhas e de curtidas recebidas) | **200**, 401, 404 |
+| PUT 🔒 | `/api/Usuario/me` | Atualiza nome, frase e livro favorito | **204**, 400 |
+| PUT 🔒 | `/api/Usuario/me/avatar` | Escolhe um avatar pronto, envia uma foto (base64) ou remove (`null`) | **204**, 400 |
+| PUT 🔒 | `/api/Usuario/me/meta` | Começa (ou remove) o desafio de leitura de 6 meses | **204**, 400 |
+| GET | `/api/Usuario/{id}/avatar` | Imagem do avatar (usada no feed e nos comentários) | **200**, 302, 404 |
 
 ### Livros
 
@@ -238,7 +268,7 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | Verbo | Rota | Descrição | Respostas |
 |---|---|---|---|
 | GET | `/api/Adaptacao` | Todas as adaptações com capa, pôster e médias | **200** |
-| GET | `/api/Adaptacao/{id}` | Um vínculo | **200**, 404 |
+| GET | `/api/Adaptacao/{id}` | Uma adaptação com capa, pôster e médias (página do duelo) | **200**, 404 |
 | GET | `/api/Adaptacao/ranking` | Top 20 por fidelidade média (mínimo de 2 avaliações; desempate pela nota do livro) | **200** |
 | POST 🔒 | `/api/Adaptacao` | Vincula livro e filme | **201**, 400, 409 (já vinculado) |
 | DELETE 🔒 | `/api/Adaptacao/{id}` | Remove o vínculo | **204**, 404, 409 (tem resenhas) |
@@ -257,11 +287,21 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 
 | Verbo | Rota | Descrição | Respostas |
 |---|---|---|---|
-| GET | `/api/Review/feed?pagina=1&tamanho=10` | Feed paginado, com capa, pôster e média da comunidade | **200** |
+| GET | `/api/Review/feed?pagina=1&tamanho=10&ordem=curtidas&idAdaptacao=5` | Feed paginado com capa, pôster, média da comunidade, avatar do autor, curtidas e comentários. `ordem`: `recentes` ou `curtidas`; filtros opcionais `idAdaptacao` e `idLivro` | **200** |
 | GET | `/api/Review` | Últimas 100 resenhas | **200** |
 | GET | `/api/Review/{id}` | Uma resenha | **200**, 404 |
 | POST 🔒 | `/api/Review` | Publica resenha com avaliação dupla | **201**, 400 |
 | DELETE 🔒 | `/api/Review/{id}` | Remove a própria resenha | **204**, 404 |
+
+### Comunidade: curtidas e comentários
+
+| Verbo | Rota | Descrição | Respostas |
+|---|---|---|---|
+| POST 🔒 | `/api/Review/{id}/curtida` | Curtir uma resenha | **201**, 404, 409 (já curtiu) |
+| DELETE 🔒 | `/api/Review/{id}/curtida` | Descurtir | **204**, 404 |
+| GET | `/api/Review/{id}/comentarios` | Comentários da resenha, do mais antigo ao mais novo | **200**, 404 |
+| POST 🔒 | `/api/Review/{id}/comentarios` | Comentar | **201**, 400, 404 |
+| DELETE 🔒 | `/api/Review/{id}/comentarios/{idComentario}` | Apagar o próprio comentário | **204**, 404 |
 
 ### Utilitários e extras
 
@@ -320,7 +360,8 @@ As chamadas ficam no `CatalogoExternoController`: o navegador chama a **nossa** 
 ## 7. Front-end
 
 - **Sem framework:** HTML, CSS e JavaScript puro, organizados em três arquivos JS: `api.js` (todas as chamadas `fetch` e a sessão), `ui.js` (componentes visuais reutilizáveis: card de obra, card **Livro vs. Filme**, estrelas, avisos, skeleton, estados vazios) e `script.js` (lógica de cada página).
-- **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em Fraunces e texto em Inter (Google Fonts), layout responsivo testado em 390 px (celular) e 1280 px.
+- **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em **Bebas Neue** (letra de cartaz de cinema) e texto em Inter (Google Fonts), sem emojis (ícones em SVG), layout responsivo testado em 390 px (celular) e 1280 px.
+- **Páginas:** início, livros, filmes, duelo Livro vs. Filme (`adaptacao.html?id=N`), feed, ranking (Top do Resenhário), resenhar, minha estante (com o desafio de leitura), perfil e entrar.
 - **Resiliência:** placeholder desenhado quando falta imagem, mensagens amigáveis quando a API falha e Chart.js com cópia local para funcionar sem internet.
 
 ---
@@ -329,7 +370,7 @@ As chamadas ficam no `CatalogoExternoController`: o navegador chama a **nossa** 
 
 Resumo (detalhes no [`LEIA-ME.md`](../LEIA-ME.md)):
 
-1. Criar o banco (Aiven ou local) com os scripts `01`, `05`, `08` e `09`.
+1. Criar o banco (Aiven ou local) com os scripts `01`, `05`, `08`, `09` e `10`.
 2. Gravar os segredos com `dotnet user-secrets set` (conexão, token do TMDB, chave do Google).
 3. `cd BACKEND/Resenhario.Api` e `dotnet run --launch-profile http`.
 4. Abrir `http://localhost:5131` (site), `/swagger` (API) e `/api/saude` (conexão com o banco).

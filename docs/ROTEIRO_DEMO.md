@@ -91,17 +91,17 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 6. Feed da comunidade (4:15–5:00)
 
-**Fazer:** menu **Feed**: a resenha da Ketelyn aparece no topo, "agora mesmo", com o selo **"✨ Primeira resenha deste livro na comunidade"**. Rolar até a resenha do **John sobre Duna (1984)**.
+**Fazer:** menu **Feed**: a resenha da Ketelyn aparece no topo, "agora mesmo", com o selo **"Primeira resenha deste livro na comunidade"**. Rolar até a resenha do **John sobre Duna (1984)** → clicar no **coração** (o número sobe na hora) → clicar no **balão** → escrever *"O Lynch é estranho, mas eu gosto!"* → **Enviar**. Mostrar a aba **Mais curtidas**.
 
 **Falar:**
-> "O feed mostra as últimas resenhas com a nota do livro, a fidelidade do filme e um comparativo entre leitores: o John deu 4 para Duna, e a média da comunidade é 4,7, então ele gostou menos que a média. É o comparativo entre leitores que o escopo pede."
+> "O feed mostra as últimas resenhas com a nota do livro, a fidelidade do filme e um comparativo entre leitores: o John deu 4 para Duna, e a média da comunidade é 4,7, então ele gostou menos que a média. E é uma comunidade de verdade: dá para curtir, comentar e compartilhar. Cada curtida é única por pessoa, garantida no banco por um índice único."
 
 ### 7. Ranking e estatísticas (5:00–6:15)
 
-**Fazer:** menu **Ranking** → mostrar o pódio (**Ainda Estou Aqui** em 1º) → depois **Minha estante** → mostrar os números e os dois gráficos → trocar o status de um livro (ex.: *Me Chame Pelo Seu Nome* de **Lendo** para **Lido**) e mostrar o gráfico atualizando → clicar no filtro **Lido**.
+**Fazer:** menu **Ranking** → mostrar o pódio do **Top do Resenhário** (**Ainda Estou Aqui** em 1º) → clicar no 1º lugar para abrir o **duelo** com as resenhas mais curtidas → depois **Minha estante** → no **Desafio de leitura**, digitar `12` e clicar em **Topar o desafio** → trocar o status de um livro (ex.: *Me Chame Pelo Seu Nome* de **Lendo** para **Lido**) e mostrar a barra do desafio e o gráfico atualizando.
 
 **Falar:**
-> "O ranking é calculado no banco com a média das notas de fidelidade. Para evitar que um filme com uma única nota fique em primeiro, só entram adaptações com pelo menos duas avaliações; por isso Coraline, que acabou de receber a primeira nota, ainda não aparece aqui. Na estante, o PUT atualiza o status e a API responde 204 No Content, e os gráficos são feitos com Chart.js."
+> "O objetivo é fazer as pessoas lerem mais: o desafio compara o que você leu nos 6 meses anteriores com a sua meta. O ranking é calculado no banco com a média das notas de fidelidade. Para evitar que um filme com uma única nota fique em primeiro, só entram adaptações com pelo menos duas avaliações; por isso Coraline, que acabou de receber a primeira nota, ainda não aparece aqui. Na estante, o PUT atualiza o status e a API responde 204 No Content, e os gráficos são feitos com Chart.js."
 
 ### 8. Encerramento (6:15–7:00)
 

@@ -15,6 +15,7 @@ Tempo total: uns 20 minutos, a maior parte esperando o primeiro build.
 
 ## Antes de começar
 
+- [ ] O banco do **Aiven** já recebeu **todos os scripts**, inclusive o **`10_perfil_meta_comunidade.sql`**. Rode o script novo **antes** de mesclar a versão que o usa: o Render publica sozinho, e a API nova sem as colunas novas no banco quebra o login e o feed.
 - [ ] O código desta versão está na branch **`main`** do GitHub (Pull Request mesclado).
 - [ ] O banco do **Aiven já está populado**: você rodou a API localmente apontando para o Aiven e o `/api/saude` mostrou `"livros": 20`. Se também rodou com as chaves do TMDB e do Google, as capas e os pôsteres já estão salvos no banco.
 - [ ] Você tem em mãos: os dados de conexão do Aiven (host, porta, senha), o token do TMDB e a chave do Google Books.
@@ -98,6 +99,8 @@ Esse é o **link público para a entrega**. Coloque-o no `LEIA-ME.md` e na docum
 | Logs mostram `Configure Jwt:Key com pelo menos 32 bytes` | Falta a variável `Jwt__Key`, ou ela está curta. Gere de novo (Passo 1), salve em **Environment** e clique em **Manual Deploy → Deploy latest commit**. |
 | `/api/saude` mostra `"sem conexão"` | Revise a `ConnectionStrings__DefaultConnection` (host, porta, senha, `SslMode=Required`). Veja se o Aiven está *Running*. Se vocês restringiram IPs no Aiven (*Allowed IP addresses*), libere `0.0.0.0/0`. |
 | Site abre, mas sem livros | O banco do Aiven está vazio. Defina `Seed__Habilitado` = `true`, publique uma vez, confira o `/api/saude` e volte para `false`. |
+| Feed sem curtidas, comentários ou avatares de exemplo | Os dados de demonstração dessas funções vêm do seed. Rode a API **uma vez no seu computador** apontando para o Aiven (o seed fica ligado por padrão) ou ligue `Seed__Habilitado` = `true` no Render por uma publicação. |
+| Login ou feed com erro depois de uma atualização | Provavelmente falta rodar um script novo no Aiven (ex.: `10_perfil_meta_comunidade.sql`). Rode no Workbench e reinicie o serviço no Render (*Manual Deploy*). |
 | Busca de filmes diz "TMDB não configurado" | Falta `Tmdb__ReadAccessToken` (o token **longo**). |
 | Demora para abrir | É o plano gratuito acordando (veja acima). Espere cerca de 1 minuto. |
 
