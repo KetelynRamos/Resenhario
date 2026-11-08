@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
 using Resenhario.Api.Models;
+using Resenhario.Api.Services;
 
 namespace Resenhario.Api.Controllers;
 
@@ -31,7 +31,7 @@ public class ComunidadeController : ControllerBase
     [HttpPost("curtida")]
     public async Task<IActionResult> Curtir(int idReview)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         if (!await _context.Reviews.AnyAsync(r => r.IdReviews == idReview)) return NotFound();
         if (await _context.Curtidas.AnyAsync(c => c.IdReview == idReview && c.IdUsuario == usuarioId))
             return Conflict(new { mensagem = "Você já curtiu esta resenha." });
@@ -47,7 +47,7 @@ public class ComunidadeController : ControllerBase
     [HttpDelete("curtida")]
     public async Task<IActionResult> Descurtir(int idReview)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var curtida = await _context.Curtidas.FirstOrDefaultAsync(c => c.IdReview == idReview && c.IdUsuario == usuarioId);
         if (curtida is null) return NotFound();
         _context.Curtidas.Remove(curtida);
@@ -62,8 +62,7 @@ public class ComunidadeController : ControllerBase
     public async Task<IActionResult> ListarComentarios(int idReview)
     {
         if (!await _context.Reviews.AnyAsync(r => r.IdReviews == idReview)) return NotFound();
-        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var usuarioLogado);
-        return Ok(await ConsultarComentarios(idReview, usuarioLogado).ToListAsync());
+        return Ok(await ConsultarComentarios(idReview, UsuarioLogado.Id(User)).ToListAsync());
     }
 
     // POST /api/Review/5/comentarios → 201 com o comentário criado, 400 (texto inválido) ou 404
@@ -71,7 +70,7 @@ public class ComunidadeController : ControllerBase
     [HttpPost("comentarios")]
     public async Task<IActionResult> Comentar(int idReview, ComentarioRequest dados)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         if (!await _context.Reviews.AnyAsync(r => r.IdReviews == idReview)) return NotFound();
         var texto = dados.Texto.Trim();
         if (texto.Length == 0) return BadRequest(new { mensagem = "Escreva um comentário." });
@@ -88,7 +87,7 @@ public class ComunidadeController : ControllerBase
     [HttpDelete("comentarios/{idComentario:int}")]
     public async Task<IActionResult> ApagarComentario(int idReview, int idComentario)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var comentario = await _context.Comentarios.FirstOrDefaultAsync(c =>
             c.IdComentario == idComentario && c.IdReview == idReview && c.IdUsuario == usuarioId);
         if (comentario is null) return NotFound();
@@ -104,11 +103,6 @@ public class ComunidadeController : ControllerBase
         where c.IdReview == idReview && (idComentario == null || c.IdComentario == idComentario)
         orderby c.DataCriacao
         select new ComentarioResposta(c.IdComentario, u.IdUsuario, u.Nome,
-            u.Avatar == null ? null
-                : u.Avatar.StartsWith("data:") ? "/api/Usuario/" + u.IdUsuario + "/avatar?v=" + u.Avatar.Length
-                : u.Avatar,
+            UsuarioController.AvatarPublico(u.IdUsuario, u.Avatar),
             c.Texto, c.DataCriacao, c.IdUsuario == usuarioLogado);
-
-    private bool TentarObterUsuarioId(out int usuarioId) =>
-        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out usuarioId);
 }
