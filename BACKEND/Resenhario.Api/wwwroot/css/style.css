@@ -500,6 +500,11 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .layout-resenha { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 32px; align-items: start; }
 .layout-resenha aside .titulo-secao h2 { font-size: 1.4rem; }
 .layout-resenha form > button { align-self: flex-start; }
+/* No computador o formulário acompanha a rolagem enquanto a pessoa lê as últimas resenhas,
+   em vez de ficar para trás deixando um espaço vazio na coluna da esquerda. */
+@media (min-width: 861px) {
+    .layout-resenha > .painel { position: sticky; top: 92px; }
+}
 
 .estatisticas { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; }
 .estatistica {
