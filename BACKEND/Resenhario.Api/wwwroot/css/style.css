@@ -106,12 +106,57 @@ h3 { font-family: var(--fonte-texto); font-weight: 600; line-height: 1.3; font-s
 }
 #menu a:hover { color: var(--texto); background: rgba(255, 255, 255, .05); }
 #menu a.ativo { color: var(--ambar); }
-#menu a.link-conta {
+#menu .link-conta {
     margin-left: 8px;
     border: 1px solid var(--borda-forte);
     color: var(--texto);
 }
-#menu a.link-conta:hover { border-color: var(--ambar); }
+#menu .link-conta:hover { border-color: var(--ambar); }
+
+/* Menu da conta (logado): "Olá, Nome" abre "Meu perfil" e "Sair da conta".
+   É um <details>: o navegador abre e fecha sozinho ao clicar no <summary>. */
+.menu-conta { position: relative; }
+.menu-conta summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: .88rem;
+    font-weight: 500;
+    cursor: pointer;
+    list-style: none;
+}
+.menu-conta summary::-webkit-details-marker { display: none; }
+.menu-conta summary::after { content: "▾"; color: var(--ambar); font-size: .8rem; }
+.menu-conta summary.ativo { color: var(--ambar); }
+.menu-conta summary .avatar { width: 26px; height: 26px; font-size: .62rem; border-width: 1px; }
+.menu-conta-opcoes {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 180px;
+    display: grid;
+    padding: 6px;
+    border: 1px solid var(--borda-forte);
+    border-radius: var(--raio-pequeno);
+    background: var(--painel);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .45);
+}
+#menu .menu-conta-opcoes a,
+.menu-conta-opcoes button {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: var(--raio-pequeno);
+    background: transparent;
+    color: var(--texto);
+    font: 500 .9rem var(--fonte-texto);
+    text-align: left;
+}
+#menu .menu-conta-opcoes a:hover,
+.menu-conta-opcoes button:hover { background: rgba(255, 255, 255, .06); color: var(--ambar); box-shadow: none; transform: none; }
 .menu-botao {
     display: none;
     flex-direction: column;
@@ -322,9 +367,6 @@ select { cursor: pointer; }
 
 /* Avatar com imagem (avatar pronto ou foto enviada) */
 .avatar-foto { object-fit: cover; background: var(--painel-2); border-color: var(--borda-forte); }
-/* Link da conta no menu: mini avatar + "Olá, Nome" */
-#menu a.link-conta { display: inline-flex; align-items: center; gap: 8px; }
-#menu a.link-conta .avatar { width: 26px; height: 26px; font-size: .62rem; border-width: 1px; }
 
 /* 7. Carregamento, vazio e avisos ------------------------------------ */
 .skeleton {
@@ -459,23 +501,6 @@ footer .credito { font-size: .75rem; opacity: .8; }
 .avatar-opcao[aria-checked="true"] { border-color: var(--ambar); box-shadow: 0 0 0 3px rgba(242, 179, 61, .25); }
 .avatar-acoes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .avatar-acoes .botao { cursor: pointer; }
-
-/* Accordion nativo do HTML (<details>/<summary>): abre e fecha sem JavaScript */
-.accordion { margin-top: 22px; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--painel); }
-.accordion summary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 18px 22px;
-    cursor: pointer;
-    list-style: none;
-    font: 400 1.5rem var(--fonte-titulo);
-    letter-spacing: .03em;
-}
-.accordion summary::-webkit-details-marker { display: none; }
-.accordion summary::after { content: "+"; color: var(--ambar); font-size: 1.6rem; transition: transform var(--transicao); }
-.accordion[open] summary::after { transform: rotate(45deg); }
-.accordion-conteudo { display: grid; gap: 14px; justify-items: start; padding: 0 22px 22px; }
 
 /* Utilitários e layouts de página ------------------------------------- */
 /* Esconde visualmente, mas mantém para leitores de tela. */
@@ -946,6 +971,11 @@ fieldset legend { float: left; width: 100%; margin-bottom: 6px; }
     #menu.aberto { transform: scaleY(1); opacity: 1; pointer-events: auto; }
     #menu a { padding: 12px 14px; border-radius: var(--raio-pequeno); font-size: 1rem; }
     #menu a.link-conta { margin: 8px 0 0; text-align: center; }
+    /* No celular o menu da conta abre logo abaixo, dentro do próprio menu */
+    .menu-conta { margin-top: 8px; }
+    .menu-conta summary { display: flex; justify-content: center; margin: 0; padding: 12px 14px; font-size: 1rem; }
+    .menu-conta-opcoes { position: static; margin-top: 6px; box-shadow: none; }
+    #menu .menu-conta-opcoes a, .menu-conta-opcoes button { text-align: center; font-size: 1rem; }
 }
 @media (max-width: 720px) {
     .duelo-destaque, .ranking-linha .duelo { grid-template-columns: 1fr; }
