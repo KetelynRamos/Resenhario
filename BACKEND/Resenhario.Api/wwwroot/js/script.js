@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
     iniciarHome();
     iniciarPaginaLivros();
     iniciarPaginaFilmes();
-    iniciarPaginaSeries();
     iniciarLogin();
     iniciarPerfil();
     iniciarEstante();
@@ -73,7 +72,7 @@ async function adicionarAEstante(ids) {
     try {
         await api("/Estante", {
             method: "POST",
-            body: JSON.stringify({ idLivros: ids.idLivros || null, idFilme: ids.idFilme || null, idSerie: ids.idSerie || null, status })
+            body: JSON.stringify({ idLivros: ids.idLivros || null, idFilme: ids.idFilme || null, status })
         });
         avisar(`Adicionado à sua estante como “${status}”.`);
     } catch (e) {
@@ -287,24 +286,6 @@ function preencherSelect(select, itens, idCampo, textoCampo, placeholder) {
     const opcao = new Option(placeholder, "");
     opcao.disabled = true; opcao.selected = true;
     select.replaceChildren(opcao, ...itens.map(item => new Option(item[textoCampo], item[idCampo])));
-}
-
-// ---------------------------------------------------------------------
-// Séries (fora do escopo: página escondida do menu, mantida no projeto)
-// ---------------------------------------------------------------------
-function iniciarPaginaSeries() {
-    const form = document.getElementById("form-busca-series");
-    if (!form) return;
-    form.addEventListener("submit", async e => {
-        e.preventDefault();
-        const termo = document.getElementById("termo-serie").value.trim();
-        const area = document.getElementById("resultados-series");
-        mostrarSkeleton(area, 6);
-        try {
-            const series = await api(`/Serie/buscar?q=${encodeURIComponent(termo)}`);
-            area.replaceChildren(...series.map(s => criarCardObra({ titulo: s.titulo, imagem: s.imagemUrl, tipo: "Filme", subtitulo: s.dataEstreia || "" })));
-        } catch (err) { mostrarEstadoVazio(area, { erro: true, titulo: "A busca falhou", texto: err.message }); }
-    });
 }
 
 // ---------------------------------------------------------------------

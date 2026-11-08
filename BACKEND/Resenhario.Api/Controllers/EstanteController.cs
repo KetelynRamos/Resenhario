@@ -17,7 +17,7 @@ public class EstanteController : ControllerBase
     public EstanteController(AppDbContext context) => _context = context;
 
     public record EstanteItem(int IdEstante, int IdUsuario, int? IdLivros, int? IdFilme,
-        int? IdSerie, string Status, string? Titulo, string? Autor, string Tipo, DateTime DataAtualizacao,
+        string Status, string? Titulo, string? Autor, string Tipo, DateTime DataAtualizacao,
         string? Imagem);
 
     [HttpGet]
@@ -30,17 +30,16 @@ public class EstanteController : ControllerBase
             from l in livros.DefaultIfEmpty()
             join f0 in _context.Filmes on e.IdFilme equals (int?)f0.IdFilme into filmes
             from f in filmes.DefaultIfEmpty()
-            join s0 in _context.Series on e.IdSerie equals (int?)s0.IdSerie into series
-            from s in series.DefaultIfEmpty()
-            where e.IdUsuario == usuarioId
+            // Só livros e filmes (linhas antigas de séries, recurso removido, ficam de fora).
+            where e.IdUsuario == usuarioId && (e.IdLivros != null || e.IdFilme != null)
             // A ordenação vem antes do select: o EF Core não consegue traduzir para SQL
             // um OrderBy feito sobre o record EstanteItem já montado (causava erro 500).
             orderby e.DataAtualizacao descending
-            select new EstanteItem(e.IdEstante, e.IdUsuario, e.IdLivros, e.IdFilme, e.IdSerie,
-                e.Status, l != null ? l.Titulo : f != null ? f.Titulo : s != null ? s.Titulo : "Item",
-                l != null ? l.Autor : f != null ? f.Diretor : null,
-                l != null ? "Livro" : f != null ? "Filme" : "Série", e.DataAtualizacao,
-                l != null ? l.CapaUrl : f != null ? f.PosterUrl : s != null ? s.ImagemUrl : null);
+            select new EstanteItem(e.IdEstante, e.IdUsuario, e.IdLivros, e.IdFilme,
+                e.Status, l != null ? l.Titulo : f!.Titulo,
+                l != null ? l.Autor : f!.Diretor,
+                l != null ? "Livro" : "Filme", e.DataAtualizacao,
+                l != null ? l.CapaUrl : f!.PosterUrl);
 
         return Ok(await query.ToListAsync());
     }
@@ -58,21 +57,18 @@ public class EstanteController : ControllerBase
     public async Task<IActionResult> CriarEstante([FromBody] Estante estante)
     {
         if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
-        int tipos = (estante.IdLivros.HasValue ? 1 : 0) +
-                    (estante.IdFilme.HasValue ? 1 : 0) +
-                    (estante.IdSerie.HasValue ? 1 : 0);
-        if (tipos != 1) return BadRequest("Informe exatamente um livro, filme ou série.");
+        // Cada item da estante é um livro OU um filme (nunca os dois, nunca nenhum).
+        if (estante.IdLivros.HasValue == estante.IdFilme.HasValue)
+            return BadRequest("Informe um livro ou um filme.");
 
         bool obraExiste = estante.IdLivros.HasValue
             ? await _context.Livros.AnyAsync(x => x.IdLivros == estante.IdLivros.Value)
-            : estante.IdFilme.HasValue
-                ? await _context.Filmes.AnyAsync(x => x.IdFilme == estante.IdFilme.Value)
-                : await _context.Series.AnyAsync(x => x.IdSerie == estante.IdSerie!.Value);
+            : await _context.Filmes.AnyAsync(x => x.IdFilme == estante.IdFilme!.Value);
         if (!obraExiste) return BadRequest("A obra selecionada não existe no catálogo.");
 
         bool duplicado = await _context.Estantes.AnyAsync(e =>
             e.IdUsuario == usuarioId && e.IdLivros == estante.IdLivros &&
-            e.IdFilme == estante.IdFilme && e.IdSerie == estante.IdSerie);
+            e.IdFilme == estante.IdFilme);
         if (duplicado) return Conflict("Esse item já está na sua estante.");
 
         // Sem status informado, começa no primeiro da lista ("Quero ler" ou "Quero ver").
