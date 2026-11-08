@@ -136,6 +136,38 @@ public static class SeedData
         new("vinicius@resenhario.dev", "Me Chame Pelo Seu Nome", 5, null, null, "Livro sensível e quente como o verão italiano. Ainda vou assistir ao filme.", 740)
     ];
 
+    // Perfis da equipe (só preenchidos se a pessoa ainda não personalizou o próprio perfil).
+    private record PerfilSeed(string Email, string Bio, string LivroFavorito, int Avatar);
+    private static readonly PerfilSeed[] Perfis =
+    [
+        new("alejandro@resenhario.dev", "Leio o livro antes do trailer sair. Sempre.", "Ensaio sobre a Cegueira", 1),
+        new("john@resenhario.dev", "Ficção científica, distopias e filmes com mais de duas horas.", "Duna", 7),
+        new("lucas@resenhario.dev", "Defensor oficial do livro ser melhor que o filme.", "O Hobbit", 3),
+        new("ketelyn@resenhario.dev", "Chorando com adaptações desde 2014.", "Orgulho e Preconceito", 2),
+        new("matheus@resenhario.dev", "Terror, suspense e qualquer coisa do Stephen King.", "O Iluminado", 5),
+        new("vinicius@resenhario.dev", "Sertão, cinema nacional e boas histórias.", "O Auto da Compadecida", 6)
+    ];
+
+    // Comentários de exemplo: (quem comenta, autor da resenha, livro da resenha, texto, horas atrás).
+    private record ComentarioSeed(string Email, string EmailResenha, string LivroTitulo, string Texto, int HorasAtras);
+    private static readonly ComentarioSeed[] ComentariosDemo =
+    [
+        new("alejandro@resenhario.dev", "ketelyn@resenhario.dev", "Ainda Estou Aqui", "Saí do cinema e fiz exatamente a mesma coisa. Esse livro é um soco.", 1),
+        new("vinicius@resenhario.dev", "ketelyn@resenhario.dev", "Ainda Estou Aqui", "A cena do sorvete no filme me quebrou.", 1),
+        new("john@resenhario.dev", "vinicius@resenhario.dev", "Duna", "A parte política do livro é o melhor! O filme só arranha.", 4),
+        new("matheus@resenhario.dev", "vinicius@resenhario.dev", "Duna", "Pelo menos a parte dois compensa um pouco disso.", 3),
+        new("lucas@resenhario.dev", "john@resenhario.dev", "Duna", "O Lynch tem um charme estranho, mas concordo: é outra história.", 18),
+        new("ketelyn@resenhario.dev", "matheus@resenhario.dev", "O Iluminado", "Discordo! O filme é obra-prima justamente por mudar o Jack.", 40),
+        new("matheus@resenhario.dev", "matheus@resenhario.dev", "O Iluminado", "Obra-prima sim, fiel não. As duas coisas podem ser verdade!", 39),
+        new("john@resenhario.dev", "alejandro@resenhario.dev", "O Senhor dos Anéis: A Sociedade do Anel", "Justiça pelo Tom Bombadil.", 55),
+        new("vinicius@resenhario.dev", "lucas@resenhario.dev", "O Hobbit", "Três filmes para um livro de 300 páginas nunca ia dar certo.", 400),
+        new("alejandro@resenhario.dev", "ketelyn@resenhario.dev", "Lavoura Arcaica", "Me convenceu, vou assistir hoje.", 170),
+        new("lucas@resenhario.dev", "vinicius@resenhario.dev", "O Auto da Compadecida", "Chicó é o melhor personagem do cinema nacional e ponto.", 190),
+        new("ketelyn@resenhario.dev", "john@resenhario.dev", "Clube da Luta", "Não sabia disso do final! Agora quero ler.", 250),
+        new("matheus@resenhario.dev", "alejandro@resenhario.dev", "Laranja Mecânica", "Esse último capítulo muda tudo mesmo.", 300),
+        new("john@resenhario.dev", "matheus@resenhario.dev", "A Culpa é das Estrelas", "Chorei só de lembrar.", 130)
+    ];
+
     public static async Task PopularAsync(AppDbContext db)
     {
         var agora = DateTime.UtcNow;
@@ -227,6 +259,51 @@ public static class SeedData
                     Status = e.Status,
                     DataAtualizacao = agora.AddDays(-e.DiasAtras)
                 });
+        }
+        await db.SaveChangesAsync();
+
+        // 7. Perfis: frase, livro favorito e avatar pronto (só onde ainda estiver vazio).
+        foreach (var p in Perfis)
+        {
+            var usuario = await db.Usuarios.FirstAsync(u => u.Email == p.Email);
+            usuario.Bio ??= p.Bio;
+            usuario.LivroFavorito ??= p.LivroFavorito;
+            usuario.Avatar ??= $"/img/avatares/avatar-{p.Avatar}.svg";
+        }
+        await db.SaveChangesAsync();
+
+        // Resenhas do seed, na mesma ordem da lista Reviews (para curtidas e comentários).
+        var resenhasSeed = new List<Review>();
+        foreach (var r in Reviews)
+        {
+            int usuario = idUsuario[r.Email], livro = idLivro[r.LivroTitulo];
+            resenhasSeed.Add(await db.Reviews.FirstAsync(x => x.IdUsuario == usuario && x.IdLivro == livro));
+        }
+
+        // 8. Curtidas: regra fixa (sem sorteio) para cada resenha ter uma quantidade diferente.
+        //    Carregamos as curtidas existentes uma vez só (HashSet) para não consultar o banco a cada par.
+        var curtidasExistentes = (await db.Curtidas.Select(c => new { c.IdReview, c.IdUsuario }).ToListAsync())
+            .Select(c => (c.IdReview, c.IdUsuario)).ToHashSet();
+        var usuariosSeed = Usuarios.Select(u => idUsuario[u.Email]).ToList();
+        for (int i = 0; i < resenhasSeed.Count; i++)
+        {
+            var resenha = resenhasSeed[i];
+            for (int j = 0; j < usuariosSeed.Count; j++)
+            {
+                int quem = usuariosSeed[j];
+                bool curte = quem != resenha.IdUsuario && ((i + 1) * (j + 3)) % 7 < (i % 4 == 0 ? 6 : 3);
+                if (curte && curtidasExistentes.Add((resenha.IdReviews, quem)))
+                    db.Curtidas.Add(new Curtida { IdReview = resenha.IdReviews, IdUsuario = quem, DataCriacao = resenha.DataCriacao.AddHours(1) });
+            }
+        }
+
+        // 9. Comentários (chave: quem comenta + resenha + texto).
+        foreach (var c in ComentariosDemo)
+        {
+            int quem = idUsuario[c.Email];
+            var resenha = await db.Reviews.FirstAsync(r => r.IdUsuario == idUsuario[c.EmailResenha] && r.IdLivro == idLivro[c.LivroTitulo]);
+            if (!await db.Comentarios.AnyAsync(x => x.IdUsuario == quem && x.IdReview == resenha.IdReviews && x.Texto == c.Texto))
+                db.Comentarios.Add(new Comentario { IdReview = resenha.IdReviews, IdUsuario = quem, Texto = c.Texto, DataCriacao = agora.AddHours(-c.HorasAtras) });
         }
         await db.SaveChangesAsync();
     }
