@@ -50,7 +50,7 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 1. Abertura, na página inicial (0:00–0:45)
 
-**Fazer:** mostrar a home sem login. Rolar devagar até "Quem fez jus ao livro?".
+**Fazer:** mostrar a home sem login. Rolar devagar até "Quem fez justiça ao livro?".
 
 **Falar:**
 > "Muita gente assiste a um filme sem saber que ele veio de um livro. O Resenhário usa o interesse pelo filme como porta de entrada para a leitura: o filme acabou, a história continua no livro. O card 'Livro vs. Filme' é o nosso diferencial: a nota do livro de um lado, o quanto o filme foi fiel do outro, sempre pela média da comunidade."
