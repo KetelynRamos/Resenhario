@@ -1,146 +1,120 @@
 # Resenhário: do filme ao livro
 
-Plataforma web de catálogo literário social que liga livros às suas adaptações para o cinema. Projeto da disciplina **Desenvolvimento de Software Visual** (Universidade Positivo, 2026).
+Plataforma web que liga livros às suas adaptações para o cinema. A pessoa descobre o livro por trás do filme, monta sua estante, dá duas notas (a do livro e a da fidelidade do filme) e compara a opinião dela com a da comunidade.
 
-O nome oficial do projeto é **Resenhário** (o texto do PDF de escopo cita "LivreFlix", nome provisório que a equipe substituiu).
+Projeto da disciplina **Desenvolvimento de Software Visual**, Universidade Positivo, 2026.
 
-**Stack:** C# / .NET 10 (ASP.NET Core Web API) · Entity Framework Core + Pomelo (MySQL) · HTML, CSS e JavaScript com `fetch()` em `wwwroot/` · Google Books API · TMDB API · BCrypt + JWT.
+**Equipe:** Alejandro Abraham Leon Benavente (Scrum Master) · John Vitor do Carmo Barbosa (Banco de Dados) · Lucas Gaeski Borges (Analista de Testes) · Ketelyn Ramos Zaleski (Front-end/Back-end) · Matheus Alexandre Vieira (QA) · Vinicius Lima Pereira (Back-end/Front-end)
 
-| Documento | Para quê |
-|---|---|
-| [`docs/PUBLICAR_ONLINE.md`](docs/PUBLICAR_ONLINE.md) | Publicar o site com um link público (Render + Aiven) |
-| [`docs/ROTEIRO_DEMO.md`](docs/ROTEIRO_DEMO.md) | Roteiro da apresentação (5–7 min) e plano B |
-| [`docs/AUDITORIA.md`](docs/AUDITORIA.md) | Conformidade com o escopo, riscos e plano de correções |
+**Tecnologias:** C# com .NET 10 (ASP.NET Core Web API) · Entity Framework Core · MySQL · HTML, CSS e JavaScript · Google Books API · TMDB API · BCrypt e JWT.
 
 ---
 
-## 1. Pré-requisitos
+## Como rodar no seu computador
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download) (`dotnet --version` deve mostrar `10.x`)
-- Um banco MySQL 8: **na nuvem (Aiven)**, recomendado para a apresentação, ou local (MySQL Workbench)
-- Opcional, mas recomendado: token do TMDB e chave do Google Books (veja a seção 3)
+São 4 passos. Leva uns 10 minutos.
 
-## 2. Banco de dados
+### 1. Instale os programas
 
-### Opção A: banco na nuvem (Aiven), usada na apresentação
+- **.NET 10 SDK:** https://dotnet.microsoft.com/download (no terminal, `dotnet --version` deve mostrar `10.x`).
+- **MySQL 8** com o **MySQL Workbench**: https://dev.mysql.com/downloads/
 
-1. Entre em [console.aiven.io](https://console.aiven.io) (a conta da equipe entra com o GitHub).
-2. **Create service → MySQL → plano Free**. Escolha a nuvem/região oferecida e crie. Espere o status ficar **Running** (alguns minutos).
-3. Na aba **Overview → Connection information**, anote **Host**, **Port** (não é 3306!), **User** (`avnadmin`) e **Password**. O SSL é obrigatório (`ssl-mode: REQUIRED`).
-4. No **MySQL Workbench**, crie uma conexão com esses dados. Em *SSL*, escolha **Require**.
-5. Rode, nesta ordem, os scripts da pasta `BANCO DE DADOS/`: **`01_criar_banco.sql`**, **`05_atualizar_banco.sql`**, **`08_alinhar_escopo.sql`**, **`09_indices_unicos.sql`** e **`10_perfil_meta_comunidade.sql`**. Eles criam o banco `resenhario_db`, as tabelas e os índices únicos sem apagar nada.
-6. Grave a string de conexão na sua máquina (seção 3) usando o host e a porta do Aiven e `SslMode=Required`.
-7. Rode a API (seção 4): na primeira vez, ela mesma preenche o banco com os dados de demonstração.
-8. Confira em `http://localhost:5131/api/saude`: deve aparecer `"banco": "conectado"` e o host do Aiven.
+### 2. Crie o banco de dados
 
-> ⚠️ **Planos gratuitos podem ser desligados depois de um tempo sem uso.** No dia da apresentação, abra o console do Aiven antes e confira se o serviço está **Running**. Se estiver desligado, clique em *Power on* e espere alguns minutos.
->
-> ⚠️ A senha do Aiven é compartilhada entre a equipe por um canal privado. **Nunca** coloque a senha no código, em um commit ou em print de tela.
+No MySQL Workbench, conecte no seu MySQL local e rode, **nesta ordem**, os scripts da pasta `BANCO DE DADOS` (menu *File → Open SQL Script*, depois o raio ⚡ para executar):
 
-### Opção B: banco local
+1. `01_criar_banco.sql`
+2. `05_atualizar_banco.sql`
+3. `08_alinhar_escopo.sql`
+4. `09_indices_unicos.sql`
+5. `10_perfil_meta_comunidade.sql`
 
-1. Abra o MySQL Workbench na sua máquina.
-2. Rode os mesmos scripts: `01_criar_banco.sql`, `05_atualizar_banco.sql`, `08_alinhar_escopo.sql`, `09_indices_unicos.sql` e `10_perfil_meta_comunidade.sql`.
-3. Grave a string de conexão local (seção 3).
+Eles criam o banco `resenhario_db` com todas as tabelas. Os outros scripts da pasta não são necessários.
 
-### Sobre os outros scripts
+### 3. Informe a senha do seu MySQL
 
-| Script | Quando usar |
-|---|---|
-| `02_dados_teste.sql` | **Não use.** São dados antigos de teste (os usuários não conseguem logar). Os dados de demonstração agora vêm do *seed* automático (seção 5). |
-| `03_consultas_teste.sql`, `04_relacionamentos.sql` | Consultas de exemplo, só leitura. |
-| `06_limpar_resenhas_de_teste.sql` | **Apaga** resenhas. Não rode no banco da nuvem. |
-| `07_migrar_notas_para_escala_1_a_5.sql` | Só para bancos antigos com notas de 0 a 10. |
-| `09_indices_unicos.sql` | Cria os índices únicos de e-mail e de par livro/filme. Se encontrar dados repetidos, só avisa. Pode rodar de novo sem problema. |
-| `10_perfil_meta_comunidade.sql` | Perfil (frase, livro favorito, avatar), meta de leitura, curtidas e comentários. **Rode antes de publicar a versão que traz essas funções**, senão o login e o feed dão erro. Pode rodar de novo sem problema. |
+Abra o arquivo `BACKEND/Resenhario.Api/appsettings.json` e troque `COLOQUE_SUA_SENHA` pela senha do usuário `root` do seu MySQL:
 
-## 3. Segredos (fora do Git)
-
-Senhas e chaves **nunca** vão para o `appsettings.json` nem para o GitHub. Cada pessoa grava os valores na própria máquina com o **`dotnet user-secrets`**, que guarda tudo numa pasta do usuário, fora do projeto. O ASP.NET carrega esses valores automaticamente no ambiente `Development`. O arquivo `BACKEND/Resenhario.Api/appsettings.Example.json` mostra quais chaves existem.
-
-No terminal, dentro de `BACKEND/Resenhario.Api`:
-
-```powershell
-cd BACKEND/Resenhario.Api
-
-# Banco na nuvem (Aiven): troque HOST, PORTA e SENHA pelos dados do console
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "server=HOST;port=PORTA;database=resenhario_db;user=avnadmin;password=SENHA;SslMode=Required;"
-
-# ou banco local
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "server=localhost;port=3306;database=resenhario_db;user=root;password=SUA_SENHA;"
-
-dotnet user-secrets set "Tmdb:ReadAccessToken" "SEU_READ_ACCESS_TOKEN_DO_TMDB"
-dotnet user-secrets set "GoogleBooks:ApiKey" "SUA_CHAVE_DO_GOOGLE_BOOKS"
-dotnet user-secrets list
+```json
+"DefaultConnection": "server=localhost;port=3306;database=resenhario_db;user=root;password=COLOQUE_SUA_SENHA;"
 ```
 
-- **TMDB:** obrigatório para pesquisar filmes e buscar os pôsteres do seed. Em themoviedb.org → Configurações → API → *API Read Access Token*.
-- **Google Books:** opcional, mas **recomendado**: sem chave, a cota pública pode acabar (erro 429). Crie no Google Cloud Console com a *Books API* ativada.
-- **JWT:** no ambiente `Development` a API usa uma chave de desenvolvimento que está em `appsettings.Development.json` (serve só para rodar localmente). Fora do Development, configure `Jwt:Key` (mínimo de 32 caracteres) com user-secrets ou com a variável de ambiente `Jwt__Key`.
+Se o seu usuário não for `root` ou a porta não for `3306`, ajuste também esses valores.
 
-Alternativa: variáveis de ambiente (use `__` no lugar de `:`), por exemplo `$env:Tmdb__ReadAccessToken = "..."` no PowerShell. Elas valem só para o terminal atual.
+### 4. Rode o site
 
-## 4. Executar
+No terminal (PowerShell, Prompt de Comando ou o terminal do VS Code), a partir da pasta do projeto:
 
-```powershell
+```
 cd BACKEND/Resenhario.Api
 dotnet run --launch-profile http
 ```
 
-| Endereço | O que é |
+Quando aparecer `Now listening on: http://localhost:5131`, abra no navegador:
+
+**http://localhost:5131**
+
+Na primeira vez, a própria API preenche o banco com os dados de demonstração: 20 livros, 21 filmes, 6 usuários, 32 resenhas, curtidas e comentários. Para parar o site, use `Ctrl + C` no terminal.
+
+---
+
+## Para entrar no site
+
+| E-mail | Senha |
 |---|---|
-| `http://localhost:5131` | O site (as páginas ficam em `wwwroot/` e são servidas pela própria API) |
-| `http://localhost:5131/swagger` | Swagger: teste da API. Use **Authorize** e cole o token de `/api/Auth/login` |
-| `http://localhost:5131/api/saude` | Confere se a API e o banco estão conectados |
+| `ketelyn@resenhario.dev` (ou `alejandro@`, `john@`, `lucas@`, `matheus@`, `vinicius@` com o mesmo final) | `Resenhario2026` |
 
-Use sempre `--launch-profile http`: ele liga o ambiente `Development`. Sem ele, a API para na inicialização pedindo a `Jwt:Key`. Não abra as páginas por `file://`.
+Também é possível criar uma conta nova em **Entrar → Criar conta**.
 
-## 5. Dados de demonstração (seed)
+## O que testar
 
-Ao iniciar, a API preenche o banco sozinha (classe `Data/SeedData.cs`) e **não duplica nada** se rodar de novo:
-
-- 20 livros adaptados (clássicos, contemporâneos e brasileiros) e 21 filmes com diretor e ano;
-- 6 usuários com os nomes da equipe (com frase, livro favorito e avatar), estantes com todos os status e 32 resenhas com nota do livro e fidelidade;
-- curtidas variadas e 14 comentários nas resenhas, para o feed já começar movimentado.
-
-| Usuário (e-mail) | Senha |
+| Página | O que fazer |
 |---|---|
-| `alejandro@resenhario.dev`, `john@resenhario.dev`, `lucas@resenhario.dev`, `ketelyn@resenhario.dev`, `matheus@resenhario.dev`, `vinicius@resenhario.dev` | `Resenhario2026` |
+| **Início** | Ver o destaque "O mais fiel do momento" e os cards **Livro vs. Filme** (nota do livro × fidelidade do filme). |
+| **Livros** | Pesquisar um livro pelo título ou autor, adicionar ao catálogo e à estante. |
+| **Filmes** | Pesquisar um filme, ou escolher um livro e clicar em **Procurar adaptações** para ver os filmes baseados nele e vincular. |
+| **Resenhar** | Dar a nota do livro e, se viu o filme, a nota de fidelidade. |
+| **Feed** | Curtir, comentar e ver se cada leitor gostou mais ou menos que a média da comunidade. |
+| **Ranking** | Top do Resenhário: as adaptações mais fiéis (com pelo menos 2 avaliações). |
+| **Minha estante** | Mudar o status de leitura, ver os gráficos e topar o desafio de leitura de 6 meses. |
+| **Swagger** | http://localhost:5131/swagger: todas as rotas da API. Para as rotas com cadeado, faça login em `/api/Auth/login`, copie o `token` e cole em **Authorize**. |
+| **Saúde** | http://localhost:5131/api/saude: confere se a API e o banco estão conectados. |
 
-**Capas e pôsteres:** a classe `Data/SeedImagens.cs` busca as imagens no TMDB e no Google Books e **as salva no banco**. Para isso, rode a API **uma vez com internet e com as chaves da seção 3** e confira no terminal mensagens como `Seed: 21 pôster(es) obtidos do TMDB`. Depois disso, a apresentação não depende das APIs externas para mostrar os dados. Sem chave ou sem internet, o site mostra capas desenhadas (placeholders) e continua funcionando.
+## Pesquisas nas APIs externas (opcional)
 
-Para desligar o seed: `dotnet user-secrets set "Seed:Habilitado" "false"`.
+As buscas usam a **Google Books API** (livros) e a **TMDB API** (filmes). As chaves ficam fora do código, por segurança.
 
-## 6. Estrutura do projeto
+- **Livros:** a busca funciona sem chave.
+- **Filmes e "Procurar adaptações":** precisam do token do TMDB. Sem ele, o site mostra um aviso e todo o resto funciona normalmente com os dados já salvos.
+
+Se quiser testar as buscas de filmes, crie um token gratuito em themoviedb.org (*Configurações → API → API Read Access Token*) e rode, dentro de `BACKEND/Resenhario.Api`:
+
+```
+dotnet user-secrets set "Tmdb:ReadAccessToken" "SEU_TOKEN"
+```
+
+Com internet, a API tenta buscar sozinha as capas dos livros de demonstração no Google Books; os pôsteres dos filmes precisam do token do TMDB. Quando não há imagem (sem token, sem internet ou com o limite de buscas do Google atingido), o site mostra capas desenhadas por ele mesmo, e tudo continua funcionando.
+
+## Se algo der errado
+
+| Sintoma | Solução |
+|---|---|
+| `dotnet` não é reconhecido, ou a versão não é 10 | Instale o .NET 10 SDK (passo 1) e abra um terminal novo. |
+| Erro na inicialização pedindo a `Jwt:Key` | Rode com `--launch-profile http`, exatamente como no passo 4. |
+| `/api/saude` mostra `"banco": "sem conexão"` | Confira a senha no `appsettings.json` (passo 3) e se o MySQL está ligado. O campo `motivo` mostra o erro. |
+| `Access denied for user 'root'@'localhost'` | A senha do passo 3 está errada. |
+| `Unknown database 'resenhario_db'` | Faltou rodar os scripts do passo 2. |
+| A porta 5131 já está em uso | Feche outro terminal que esteja rodando o projeto e tente de novo. |
+
+## Organização do projeto
 
 ```
 BACKEND/Resenhario.Api/
-├── Controllers/    API REST ([ApiController], rotas api/[controller])
-├── Models/         Classes do domínio (Livro, Filme, Adaptacao, Review, Estante, Usuario) com Data Annotations
-├── Data/           AppDbContext (EF Core), SeedData e SeedImagens
-├── Services/       ConferenciaAdaptacao (confere no TMDB se o filme é adaptação do livro) e UsuarioLogado (ID de quem está logado)
-├── wwwroot/        Front-end: index.html, paginas/, css/style.css, js/ (api.js, ui.js, catalogo.js, resenhas.js e paginas/ com um arquivo por página), lib/ (Chart.js)
-├── Program.cs      Configuração: EF Core, JWT, HttpClientFactory, Swagger, erros globais, seed, /api/saude
-└── appsettings*.json
-BANCO DE DADOS/     Scripts SQL (criação e atualização não destrutivas)
-docs/               Auditoria, roteiro da demo e documentação técnica
+├── Controllers/   Rotas da API (livros, filmes, adaptações, estante, resenhas, comunidade, usuário, login)
+├── Models/        Classes do domínio com as validações (Data Annotations)
+├── Data/          AppDbContext (Entity Framework Core) e os dados de demonstração
+├── Services/      Conferência de adaptações no TMDB e leitura do usuário logado
+├── wwwroot/       O site: páginas HTML, CSS e JavaScript
+└── Program.cs     Configuração: banco, login (JWT), APIs externas, Swagger e erros
+BANCO DE DADOS/    Scripts SQL de criação do banco
 ```
-
-## 7. Segurança
-
-- Senhas guardadas com hash **BCrypt**; login devolve um token **JWT** (8 horas).
-- Estante, resenhas e qualquer alteração no catálogo exigem login (`[Authorize]`); cada usuário só altera a própria estante e as próprias resenhas.
-- Validação de entrada com Data Annotations e tratamento global de erros (sem stack trace para o navegador).
-- Chaves do TMDB e do Google ficam só no backend; o JavaScript nunca as recebe.
-- O token fica no `localStorage`, o que é prático para o projeto acadêmico. Para produção, o ideal seria um cookie `HttpOnly`.
-
-## 8. Problemas comuns
-
-| Sintoma | Causa provável e solução |
-|---|---|
-| `/api/saude` mostra `"banco": "sem conexão"` | String de conexão errada, serviço do Aiven desligado, ou falta `SslMode=Required`. O campo `motivo` diz o erro. |
-| Erro na inicialização: `Configure Jwt:Key...` | Rodou sem `--launch-profile http`. |
-| Busca de filmes: "integração TMDB não configurada" | Falta o `Tmdb:ReadAccessToken` (seção 3). |
-| Busca de livros: "Google Books respondeu com HTTP 429" | Cota pública esgotada: configure `GoogleBooks:ApiKey`. Os livros já salvos continuam aparecendo. |
-| Capas desenhadas em vez das imagens reais | O seed de imagens ainda não rodou com internet e chaves (seção 5). |
-| Gráficos da estante não aparecem | O Chart.js vem do arquivo `wwwroot/lib/chart.umd.min.js` (não depende de internet); recarregue a página (Ctrl+F5). |

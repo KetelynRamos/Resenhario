@@ -8,7 +8,7 @@ namespace Resenhario.Api.Data;
 // não duplica nada; só completa o que estiver faltando.
 public static class SeedData
 {
-    // Senha de todos os usuários de demonstração (documentada no ROTEIRO_DEMO).
+    // Senha de todos os usuários de demonstração (documentada no LEIA-ME).
     public const string SenhaDemo = "Resenhario2026";
 
     // Records simples só para deixar as listas abaixo fáceis de ler.
