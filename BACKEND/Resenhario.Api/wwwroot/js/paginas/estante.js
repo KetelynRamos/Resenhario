@@ -124,7 +124,7 @@ function renderizarGraficos(livros) {
     // Visual dos gráficos combinando com o tema escuro do site.
     Chart.defaults.color = "#b3a998";
     Chart.defaults.borderColor = "rgba(255, 255, 255, .07)";
-    Chart.defaults.font.family = "Inter, system-ui, sans-serif";
+    Chart.defaults.font.family = "Barlow, system-ui, sans-serif";
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
 
     // 1) Rosca: quantos livros em cada status.
@@ -153,7 +153,7 @@ function renderizarGraficos(livros) {
         type: "bar",
         data: {
             labels: meses.map(m => m.toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")),
-            datasets: [{ label: "Livros lidos", data: meses.map(lidosNoMes), backgroundColor: "#f2b33d", hoverBackgroundColor: "#ffd27a", borderRadius: 6, maxBarThickness: 42 }]
+            datasets: [{ label: "Livros lidos", data: meses.map(lidosNoMes), backgroundColor: "#f2b33d", hoverBackgroundColor: "#ffd27a", borderRadius: 2, maxBarThickness: 42 }]
         },
         options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } } }
     });
