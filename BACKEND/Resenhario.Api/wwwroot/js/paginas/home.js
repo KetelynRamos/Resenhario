@@ -22,7 +22,7 @@ async function iniciarHome() {
     ]);
 }
 
-// Hero (1º lugar do ranking), números da comunidade e os três "duelos" seguintes.
+// Hero (1º lugar do ranking), números da comunidade e as três adaptações seguintes.
 async function carregarDestaquesHome() {
     const heroDuelo = document.getElementById("hero-duelo");
     const duelos = document.getElementById("inicio-duelos");
@@ -36,7 +36,7 @@ async function carregarDestaquesHome() {
 
         if (!ranking.length) {
             document.querySelector(".hero-destaque").hidden = true;
-            mostrarEstadoVazio(duelos, { titulo: "Nenhum duelo avaliado ainda", texto: "Dá a primeira nota e começa a disputa.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
+            mostrarEstadoVazio(duelos, { titulo: "Nenhuma adaptação avaliada ainda", texto: "Dá a primeira nota e começa a comparação.", botao: { texto: "Dar minha nota", href: "/paginas/reviews.html" } });
             return;
         }
         const [primeiro, ...outros] = ranking;

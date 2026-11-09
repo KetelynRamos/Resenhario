@@ -251,7 +251,7 @@ function valorEstrelas(nome) {
 }
 
 // Título do card. Com link, o <a> "estica" sobre o card inteiro (CSS .duelo-clicavel),
-// então clicar em qualquer parte do card abre a página do duelo.
+// então clicar em qualquer parte do card abre a página da adaptação.
 function criarTituloDuelo(item, semLink) {
     const titulo = el("h3");
     if (semLink) { titulo.textContent = item.tituloLivro; return titulo; }
@@ -301,7 +301,7 @@ function criarBlocoNota(rotulo, media, total, singular, plural, classe) {
     return bloco;
 }
 
-// semLink = true na própria página do duelo (o card não precisa levar a ele mesmo).
+// semLink = true na própria página da adaptação (o card não precisa levar a ele mesmo).
 function criarDuelo(item, destaque = false, semLink = false) {
     const card = el("article", `duelo${destaque ? " duelo-destaque" : ""}${semLink ? "" : " duelo-clicavel"}`);
 

@@ -14,10 +14,10 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 - [ ] Abrir `http://localhost:5131/api/saude` e conferir `"banco": "conectado"` com o host do **Aiven**.
 - [ ] **Preparar o plano B:** em *Livros*, pesquisar `O Pequeno Príncipe` e clicar em **Adicionar ao catálogo**; em *Filmes*, pesquisar `O Pequeno Príncipe` e adicionar o filme de **2015**. **Não vincular** os dois: o vínculo fica para a demo, caso a internet falhe.
 - [ ] Conferir que **Coraline** **não** está no catálogo (é o livro do plano A).
-- [ ] **Ensaiar a busca de adaptações sem mexer nos dados:** em *Livros*, no card de **Duna**, clicar em **Virou filme?**. Devem aparecer **Duna (1984)** e **Duna (2021)** com "Duelo já aberto · Baseado na obra de Frank Herbert". Isso prova que o TMDB está respondendo e que a conferência funciona.
+- [ ] **Ensaiar a busca de adaptações sem mexer nos dados:** em *Livros*, no card de **Duna**, clicar em **Virou filme?**. Devem aparecer **Duna (1984)** e **Duna (2021)** com "Já vinculado · Baseado na obra de Frank Herbert". Isso prova que o TMDB está respondendo e que a conferência funciona.
   - Não apareceu nada (nem a mensagem "Procurando…")? Recarregar com **Ctrl+F5** (o navegador pode estar usando uma versão antiga da página).
   - Apareceu "Nenhuma adaptação encontrada"? Abrir `https://SEU-ENDERECO.onrender.com/api/Livro/ID/adaptacoes-sugeridas` (o `ID` é o número que aparece em `?livro=` na barra de endereço) e mandar o resultado para a equipe investigar.
-- [ ] Abrir o duelo de **Duna (2021)** (Ranking ou Filmes) e conferir o selo verde **"Adaptação confirmada"**. Ele mostra que o filme tem o código do TMDB salvo, o que o aviso de vínculo errado do passo 4 precisa.
+- [ ] Abrir a página da adaptação de **Duna (2021)** (Ranking ou Filmes) e conferir o selo verde **"Adaptação confirmada"**. Ele mostra que o filme tem o código do TMDB salvo, o que o aviso de vínculo errado do passo 4 precisa.
 - [ ] **Livros de reserva** para a busca de adaptações, caso Coraline não funcione na hora: **O Iluminado** (Stephen King → filme de 1980) e **Jurassic Park** (Michael Crichton → filme de 1993). Testar um deles na véspera do mesmo jeito (adicionar o livro, clicar em **Virou filme?**) e deixar anotado qual funcionou.
 - [ ] **Gravar um vídeo de tela** do roteiro inteiro (o Xbox Game Bar do Windows grava com `Win + Alt + R`). É o plano C.
 - [ ] Combinar quem fala em cada passo (sugestão na tabela abaixo).
@@ -75,9 +75,9 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 4. Filme no TMDB e vínculo Livro ↔ Filme (2:15–3:15)
 
-**Fazer:** ainda em **Livros**, no card de **Coraline**, clicar em **Virou filme?** → a página **Filmes** abre com o livro já escolhido e mostra o filme de **2009** (Henry Selick) com "Baseado na obra de Neil Gaiman" → clicar em **Abrir o duelo**. O aviso confirma que o filme veio do livro, e o card "Livro vs. Filme" aparece em *Duelos abertos*.
+**Fazer:** ainda em **Livros**, no card de **Coraline**, clicar em **Virou filme?** → a página **Filmes** abre com o livro já escolhido e mostra o filme de **2009** (Henry Selick) com "Baseado na obra de Neil Gaiman" → clicar em **Vincular ao livro**. O aviso confirma que o filme veio do livro, e o card "Livro vs. Filme" aparece em *Adaptações vinculadas*.
 
-**Mostrar o erro evitado (se der tempo):** com o Livro **Coraline** escolhido, abrir **Já sabe qual é o filme?**, escolher o Filme **Duna (2021)** → **Abrir o duelo** → aparece o aviso *"Pelo que encontramos, Duna é baseado na obra de Frank Herbert, e não de Neil Gaiman"* → clicar em **Escolher outro filme**.
+**Mostrar o erro evitado (se der tempo):** com o Livro **Coraline** escolhido, abrir **Já sabe qual é o filme?**, escolher o Filme **Duna (2021)** → **Vincular ao livro** → aparece o aviso *"Pelo que encontramos, Duna é baseado na obra de Frank Herbert, e não de Neil Gaiman"* → clicar em **Escolher outro filme**.
 
 **Falar:**
 > "O usuário não precisa saber se o livro virou filme: o sistema procura no TMDB os filmes cujo autor original é o autor do livro. E se alguém tentar ligar um livro a um filme errado, a API confere e avisa antes. O token do TMDB fica só no servidor, fora do GitHub. A tabela Adaptacoes liga um livro a um filme, e um mesmo livro pode ter várias adaptações, como Duna, que tem a versão de 1984 e a de 2021."
@@ -105,7 +105,7 @@ Cada passo tem **o que fazer**, **o que falar** e **o que fazer se der errado**.
 
 ### 7. Ranking e estatísticas (5:00–6:15)
 
-**Fazer:** menu **Ranking** → mostrar o pódio do **Top do Resenhário** (**Ainda Estou Aqui** em 1º) → clicar no 1º lugar para abrir o **duelo** com as resenhas mais curtidas → depois **Minha estante** → no **Desafio de leitura**, digitar `12` e clicar em **Topar o desafio** → trocar o status de um livro (ex.: *Me Chame Pelo Seu Nome* de **Lendo** para **Lido**) e mostrar a barra do desafio e o gráfico atualizando.
+**Fazer:** menu **Ranking** → mostrar o pódio do **Top do Resenhário** (**Ainda Estou Aqui** em 1º) → clicar no 1º lugar para abrir a **página da adaptação** com as resenhas mais curtidas → depois **Minha estante** → no **Desafio de leitura**, digitar `12` e clicar em **Topar o desafio** → trocar o status de um livro (ex.: *Me Chame Pelo Seu Nome* de **Lendo** para **Lido**) e mostrar a barra do desafio e o gráfico atualizando.
 
 **Falar:**
 > "O objetivo é fazer as pessoas lerem mais: o desafio compara o que você leu nos 6 meses anteriores com a sua meta. O ranking é calculado no banco com a média das notas de fidelidade. Para evitar que um filme com uma única nota fique em primeiro, só entram adaptações com pelo menos duas avaliações; por isso Coraline, que acabou de receber a primeira nota, ainda não aparece aqui. Na estante, o PUT atualiza o status e a API responde 204 No Content, e os gráficos são feitos com Chart.js."

@@ -1,6 +1,6 @@
 // =====================================================================
 // resenhas.js: Resenhas do feed: card da resenha e as interações (curtir, comentar, compartilhar).
-// Usado no início, no feed, no Resenhar e na página do duelo.
+// Usado no início, no feed, no Resenhar e na página da adaptação.
 // Depende de api.js (chamadas à API) e ui.js (componentes visuais).
 // =====================================================================
 
@@ -31,7 +31,7 @@ function cardResenha(review) {
     const topo = el("header", "resenha-topo");
     const quem = el("div", "resenha-quem");
     const linha = el("span", "resenha-acao", "resenhou ");
-    // Resenha que avaliou um filme: o nome do livro leva ao duelo Livro vs. Filme.
+    // Resenha que avaliou um filme: o nome do livro leva à página Livro vs. Filme.
     const nomeLivro = review.idAdaptacao ? el("a", "", review.titulo) : el("b", "", review.titulo || "um livro");
     if (review.idAdaptacao) nomeLivro.href = `/paginas/adaptacao.html?id=${review.idAdaptacao}`;
     linha.append(nomeLivro, ` · ${dataRelativa(review.dataCriacao)}`);
@@ -154,7 +154,7 @@ function criarAcoesResenha(review) {
         }
     });
 
-    // Compartilhar: link do duelo (se a resenha avaliou um filme) ou do feed.
+    // Compartilhar: link da adaptação (se a resenha avaliou um filme) ou do feed.
     const compartilhar = el("button", "acao acao-compartilhar");
     compartilhar.type = "button";
     compartilhar.append(criarIcone("compartilhar"), el("span", "", "Compartilhar"));
