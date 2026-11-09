@@ -353,7 +353,7 @@ As chamadas ficam no `CatalogoExternoController`: o navegador chama a **nossa** 
 ## 7. Front-end
 
 - **Sem framework:** HTML, CSS e JavaScript puro, organizados assim: `api.js` (todas as chamadas `fetch` e a sessão), `ui.js` (componentes visuais reutilizáveis: card de obra, card **Livro vs. Filme**, estrelas, avisos, skeleton, estados vazios), `catalogo.js` e `resenhas.js` (partes usadas em mais de uma página) e a pasta `js/paginas/`, com **um arquivo por página** (`livros.js`, `filmes.js`, `estante.js`...). Cada página HTML carrega só os arquivos de que precisa.
-- **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em **Bebas Neue** (letra de cartaz de cinema) e texto em Inter (Google Fonts), sem emojis (ícones em SVG), layout responsivo testado em 390 px (celular) e 1280 px.
+- **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em **Bebas Neue** (letra de cartaz de cinema) e texto em **Barlow** (Google Fonts), da mesma família de letras retas, mas mais leve; visual sóbrio, com cantos pouco arredondados, caixas quase da cor do fundo e sem brilhos ou "pulos" no hover, sem emojis (ícones em SVG), layout responsivo testado em 390 px (celular) e 1280 px.
 - **Páginas:** início, livros, filmes, duelo Livro vs. Filme (`adaptacao.html?id=N`), feed, ranking (Top do Resenhário), resenhar, minha estante (com o desafio de leitura), perfil e entrar.
 - **Resiliência:** placeholder desenhado quando falta imagem, mensagens amigáveis quando a API falha e Chart.js com cópia local para funcionar sem internet.
 
