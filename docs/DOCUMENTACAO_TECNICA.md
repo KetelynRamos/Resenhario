@@ -15,7 +15,7 @@ O usuário pode:
 - organizar a **estante virtual** com os status *Quero ler*, *Lendo*, *Lido* e *Abandonado*;
 - publicar **resenhas com avaliação dupla**: nota da obra (1 a 5) e, se viu o filme, nota de **fidelidade** da adaptação (1 a 5);
 - acompanhar o **feed** da comunidade, com comparativo entre a nota de cada leitor e a média da comunidade, **curtir**, **comentar** e compartilhar resenhas;
-- abrir a página de cada **duelo Livro vs. Filme**, com as resenhas mais curtidas daquela adaptação;
+- abrir a página de cada **adaptação (Livro vs. Filme)**, com as resenhas mais curtidas daquela adaptação;
 - personalizar o **perfil** (frase, livro favorito, avatar pronto ou foto) e criar um **desafio de leitura** de 6 meses;
 - ver o **ranking** das adaptações mais fiéis (pódio) e as **estatísticas de leitura** em gráficos.
 
@@ -263,7 +263,7 @@ Todas as rotas começam em `http://localhost:5131`. 🔒 = exige token JWT (`Aut
 | Verbo | Rota | Descrição | Respostas |
 |---|---|---|---|
 | GET | `/api/Adaptacao` | Todas as adaptações com capa, pôster e médias | **200** |
-| GET | `/api/Adaptacao/{id}` | Uma adaptação com capa, pôster e médias (página do duelo) | **200**, 404 |
+| GET | `/api/Adaptacao/{id}` | Uma adaptação com capa, pôster e médias (página da adaptação) | **200**, 404 |
 | GET | `/api/Adaptacao/ranking` | Top 20 por fidelidade média (mínimo de 2 avaliações; desempate pela nota do livro) | **200** |
 | GET | `/api/Adaptacao/{id}/conferencia` | O TMDB confirma que o filme é baseado no livro? (`confirmada`, `nao-confere` ou `nao-conferida`) | **200**, 404 |
 | POST 🔒 | `/api/Adaptacao` | Vincula livro e filme. Confere no TMDB se o autor original do filme é o autor do livro; se não for, responde 409 com `precisaConfirmar` e só vincula com `vincularMesmoAssim: true` | **201**, 400, 409 (já vinculado ou não confere) |
@@ -354,7 +354,7 @@ As chamadas ficam no `CatalogoExternoController`: o navegador chama a **nossa** 
 
 - **Sem framework:** HTML, CSS e JavaScript puro, organizados assim: `api.js` (todas as chamadas `fetch` e a sessão), `ui.js` (componentes visuais reutilizáveis: card de obra, card **Livro vs. Filme**, estrelas, avisos, skeleton, estados vazios), `catalogo.js` e `resenhas.js` (partes usadas em mais de uma página) e a pasta `js/paginas/`, com **um arquivo por página** (`livros.js`, `filmes.js`, `estante.js`...). Cada página HTML carrega só os arquivos de que precisa.
 - **Identidade visual "cinema + livro":** tema escuro com destaque âmbar, títulos em **Bebas Neue** (letra de cartaz de cinema) e texto em **Barlow** (Google Fonts), da mesma família de letras retas, mas mais leve; visual sóbrio, com cantos pouco arredondados, caixas quase da cor do fundo e sem brilhos ou "pulos" no hover, sem emojis (ícones em SVG), layout responsivo testado em 390 px (celular) e 1280 px.
-- **Páginas:** início, livros, filmes, duelo Livro vs. Filme (`adaptacao.html?id=N`), feed, ranking (Top do Resenhário), resenhar, minha estante (com o desafio de leitura), perfil e entrar.
+- **Páginas:** início, livros, filmes, página da adaptação Livro vs. Filme (`adaptacao.html?id=N`), feed, ranking (Top do Resenhário), resenhar, minha estante (com o desafio de leitura), perfil e entrar.
 - **Resiliência:** placeholder desenhado quando falta imagem, mensagens amigáveis quando a API falha e Chart.js com cópia local para funcionar sem internet.
 
 ---
