@@ -103,7 +103,7 @@ async function carregarListasDoVinculo(livroEscolhido = document.getElementById(
         if (livros.some(l => String(l.idLivros) === String(livroEscolhido))) livroSelect.value = livroEscolhido;
         renderizarAdaptacoes(lista, adaptacoes);
     } catch (e) {
-        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar os duelos", texto: e.message });
+        mostrarEstadoVazio(lista, { erro: true, titulo: "Não deu para carregar as adaptações", texto: e.message });
     }
 }
 
@@ -117,8 +117,8 @@ async function vincularLivroEFilme(idLivro, idFilme, vincularMesmoAssim = false)
         const resposta = await api("/Adaptacao", { method: "POST", body: JSON.stringify({ idLivro, idFilme, vincularMesmoAssim }) });
         aviso.hidden = true;
         avisar(resposta?.situacao === "confirmada"
-            ? "Duelo aberto! E sim: o filme veio mesmo deste livro."
-            : "Duelo aberto! Agora é com a galera.");
+            ? "Adaptação vinculada! E sim: o filme veio mesmo deste livro."
+            : "Adaptação vinculada! Agora é com a galera.");
         await carregarListasDoVinculo();
         return true;
     } catch (err) {
@@ -156,8 +156,8 @@ async function procurarAdaptacoes(idLivro) {
         area.replaceChildren(...sugestoes.map(s => criarCardObra({
             titulo: s.titulo, imagem: s.posterUrl, tipo: "Filme",
             subtitulo: [s.anoLancamento, s.diretor].filter(Boolean).join(" · "),
-            detalhe: `${s.jaVinculado ? "Duelo já aberto · " : ""}Baseado na obra de ${s.autoresOriginais.join(", ")}`,
-            acoes: s.jaVinculado ? [] : [{ texto: "Abrir o duelo", acao: botao => abrirDueloSugerido(idLivro, s, botao) }]
+            detalhe: `${s.jaVinculado ? "Já vinculado · " : ""}Baseado na obra de ${s.autoresOriginais.join(", ")}`,
+            acoes: s.jaVinculado ? [] : [{ texto: "Vincular ao livro", acao: botao => abrirDueloSugerido(idLivro, s, botao) }]
         })));
     } catch {
         msg.textContent = "";
@@ -177,7 +177,7 @@ async function abrirDueloSugerido(idLivro, sugestao, botao) {
             await carregarFilmesEm(document.getElementById("lista-filmes"), true);
         }
         if (await vincularLivroEFilme(idLivro, idFilme)) {
-            botao.textContent = "Duelo aberto";
+            botao.textContent = "Vinculado";
             return;
         }
     } catch (err) {
@@ -189,7 +189,7 @@ async function abrirDueloSugerido(idLivro, sugestao, botao) {
 // Adaptações já vinculadas, cada uma no card "Livro vs. Filme".
 function renderizarAdaptacoes(lista, adaptacoes) {
     if (!adaptacoes.length) {
-        mostrarEstadoVazio(lista, { titulo: "Nenhum duelo aberto", texto: "Junta um livro e um filme aí em cima." });
+        mostrarEstadoVazio(lista, { titulo: "Nenhuma adaptação vinculada", texto: "Junta um livro e um filme aí em cima." });
         return;
     }
     lista.replaceChildren(...adaptacoes.map(a => criarDuelo(a)));

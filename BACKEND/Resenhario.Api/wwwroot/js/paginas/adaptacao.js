@@ -1,5 +1,5 @@
 // =====================================================================
-// adaptacao.js: Página do duelo Livro vs. Filme: card em destaque e as resenhas mais curtidas.
+// adaptacao.js: Página da adaptação (Livro vs. Filme): card em destaque e as resenhas mais curtidas.
 // Depende de api.js (chamadas à API) e ui.js (componentes visuais).
 // =====================================================================
 
@@ -20,11 +20,11 @@ async function iniciarAdaptacao() {
         const avaliar = `/paginas/reviews.html?livro=${item.idLivro}&adaptacao=${item.idAdaptacoes}`;
         document.getElementById("adaptacao-avaliar").href = avaliar;
         await carregarResenhasEm(lista, { idAdaptacao: id, ordem: "curtidas", tamanho: 10,
-            vazio: { titulo: "Ninguém avaliou esse duelo ainda", texto: "Viu o filme e leu o livro? A primeira opinião é sua.", botao: { texto: "Dar minha nota", href: avaliar } } });
+            vazio: { titulo: "Ninguém avaliou essa adaptação ainda", texto: "Viu o filme e leu o livro? A primeira opinião é sua.", botao: { texto: "Dar minha nota", href: avaliar } } });
     } catch {
         areaDuelo.replaceChildren();
         lista.replaceChildren();
-        mostrarEstadoVazio(areaDuelo, { erro: true, titulo: "Não achamos esse duelo", texto: "Ele pode ter sido removido. Que tal ver o Top do Resenhário?", botao: { texto: "Ver o Top", href: "/paginas/ranking.html" } });
+        mostrarEstadoVazio(areaDuelo, { erro: true, titulo: "Não achamos essa adaptação", texto: "Ele pode ter sido removido. Que tal ver o Top do Resenhário?", botao: { texto: "Ver o Top", href: "/paginas/ranking.html" } });
     }
 }
 
