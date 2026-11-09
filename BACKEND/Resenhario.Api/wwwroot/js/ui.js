@@ -169,10 +169,14 @@ function criarEstrelas(nota, classe = "") {
     return span;
 }
 
+// A API devolve datas em UTC sem o "Z" no final; acrescentamos para o navegador entender o fuso.
+function dataDaApi(iso) {
+    return new Date(iso.endsWith("Z") ? iso : iso + "Z");
+}
+
 // "há 2 horas", "há 3 dias"... usando o formatador nativo do navegador.
 function dataRelativa(dataIso) {
-    // A API devolve datas em UTC sem o "Z" no final; adicionamos para o navegador entender.
-    const data = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(dataIso) ? dataIso : dataIso + "Z");
+    const data = dataDaApi(dataIso);
     const segundos = Math.round((data - new Date()) / 1000);
     const formatador = new Intl.RelativeTimeFormat("pt-BR", { numeric: "auto" });
     const unidades = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]];
@@ -244,34 +248,6 @@ function criarSeletorEstrelas(nome, legendas) {
 function valorEstrelas(nome) {
     const marcado = document.querySelector(`input[name="${nome}"]:checked`);
     return marcado ? Number(marcado.value) : null;
-}
-
-// ----- Chart.js: CDN com plano B local --------------------------------
-// Tenta o CDN (cdnjs); se a internet falhar, usa a cópia da mesma versão em /lib.
-const CHART_JS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js";
-const CHART_JS_LOCAL = "/lib/chart.umd.min.js";
-
-function carregarScript(url) {
-    return new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = url;
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
-
-async function carregarChartJs() {
-    if (window.Chart) return true;
-    try { await carregarScript(CHART_JS_CDN); }
-    catch { try { await carregarScript(CHART_JS_LOCAL); } catch { return false; } }
-    if (!window.Chart) return false;
-    // Visual padrão dos gráficos combinando com o tema escuro do site.
-    Chart.defaults.color = "#b3a998";
-    Chart.defaults.borderColor = "rgba(255, 255, 255, .07)";
-    Chart.defaults.font.family = "Inter, system-ui, sans-serif";
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) Chart.defaults.animation = false;
-    return true;
 }
 
 // Título do card. Com link, o <a> "estica" sobre o card inteiro (CSS .duelo-clicavel),

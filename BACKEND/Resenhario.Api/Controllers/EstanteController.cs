@@ -1,9 +1,9 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
 using Resenhario.Api.Models;
+using Resenhario.Api.Services;
 
 namespace Resenhario.Api.Controllers;
 
@@ -23,7 +23,7 @@ public class EstanteController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetEstantes()
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var query =
             from e in _context.Estantes
             join l0 in _context.Livros on e.IdLivros equals (int?)l0.IdLivros into livros
@@ -48,7 +48,7 @@ public class EstanteController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Estante>> GetEstante(int id)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var item = await _context.Estantes.FirstOrDefaultAsync(e => e.IdEstante == id && e.IdUsuario == usuarioId);
         return item is null ? NotFound() : Ok(item);
     }
@@ -56,7 +56,7 @@ public class EstanteController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CriarEstante([FromBody] Estante estante)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         // Cada item da estante é um livro OU um filme (nunca os dois, nunca nenhum).
         if (estante.IdLivros.HasValue == estante.IdFilme.HasValue)
             return BadRequest("Informe um livro ou um filme.");
@@ -85,7 +85,7 @@ public class EstanteController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> AtualizarEstante(int id, [FromBody] AtualizarStatusRequest dados)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var estante = await _context.Estantes.FirstOrDefaultAsync(e => e.IdEstante == id && e.IdUsuario == usuarioId);
         if (estante is null) return NotFound();
 
@@ -99,18 +99,13 @@ public class EstanteController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeletarEstante(int id)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
+        var usuarioId = UsuarioLogado.Id(User);
         var item = await _context.Estantes.FirstOrDefaultAsync(e => e.IdEstante == id && e.IdUsuario == usuarioId);
         if (item is null) return NotFound();
         _context.Estantes.Remove(item);
         await _context.SaveChangesAsync();
         return NoContent();
     }
-
-    // Lê o ID do usuário de dentro do token JWT (claim NameIdentifier).
-    // Por isso cada pessoa só enxerga e altera a PRÓPRIA estante, mesmo que mande outro ID.
-    private bool TentarObterUsuarioId(out int usuarioId) =>
-        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out usuarioId);
 
     public record AtualizarStatusRequest(string Status);
 }

@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
+using Resenhario.Api.Services;
 
 namespace Resenhario.Api.Controllers;
 
@@ -46,13 +46,12 @@ public class UsuarioController : ControllerBase
     [HttpGet("me")]
     public async Task<ActionResult<PerfilResposta>> GetMeuUsuario()
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
-        var u = await _context.Usuarios.FindAsync(usuarioId);
+        var u = await _context.Usuarios.FindAsync(UsuarioLogado.Id(User));
         if (u is null) return NotFound();
 
-        var totalResenhas = await _context.Reviews.CountAsync(r => r.IdUsuario == usuarioId);
+        var totalResenhas = await _context.Reviews.CountAsync(r => r.IdUsuario == u.IdUsuario);
         var curtidasRecebidas = await _context.Curtidas.CountAsync(c =>
-            _context.Reviews.Any(r => r.IdReviews == c.IdReview && r.IdUsuario == usuarioId));
+            _context.Reviews.Any(r => r.IdReviews == c.IdReview && r.IdUsuario == u.IdUsuario));
 
         return Ok(new PerfilResposta(u.IdUsuario, u.Nome, u.Email, u.DataCadastro, u.Bio, u.LivroFavorito,
             AvatarPublico(u.IdUsuario, u.Avatar), u.MetaLivros, u.MetaInicio, totalResenhas, curtidasRecebidas));
@@ -62,8 +61,7 @@ public class UsuarioController : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> AtualizarPerfil(AtualizarPerfilRequest dados)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
-        var u = await _context.Usuarios.FindAsync(usuarioId);
+        var u = await _context.Usuarios.FindAsync(UsuarioLogado.Id(User));
         if (u is null) return NotFound();
 
         u.Nome = dados.Nome.Trim();
@@ -77,8 +75,7 @@ public class UsuarioController : ControllerBase
     [HttpPut("me/avatar")]
     public async Task<IActionResult> AtualizarAvatar(AvatarRequest dados)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
-        var u = await _context.Usuarios.FindAsync(usuarioId);
+        var u = await _context.Usuarios.FindAsync(UsuarioLogado.Id(User));
         if (u is null) return NotFound();
 
         var avatar = dados.Avatar;
@@ -95,8 +92,7 @@ public class UsuarioController : ControllerBase
     [HttpPut("me/meta")]
     public async Task<IActionResult> AtualizarMeta(MetaRequest dados)
     {
-        if (!TentarObterUsuarioId(out var usuarioId)) return Unauthorized();
-        var u = await _context.Usuarios.FindAsync(usuarioId);
+        var u = await _context.Usuarios.FindAsync(UsuarioLogado.Id(User));
         if (u is null) return NotFound();
 
         u.MetaLivros = dados.MetaLivros;
@@ -120,8 +116,4 @@ public class UsuarioController : ControllerBase
         Response.Headers.CacheControl = "public, max-age=86400"; // o "?v=" do endereço garante a versão nova
         return File(bytes, $"image/{match.Groups[1].Value}");
     }
-
-    // O ID do usuário vem do token JWT, nunca do corpo da requisição.
-    private bool TentarObterUsuarioId(out int usuarioId) =>
-        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out usuarioId);
 }

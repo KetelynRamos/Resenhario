@@ -1,6 +1,6 @@
 // =====================================================================
 // api.js: comunicação do front com a API do Resenhário (fetch + JSON)
-// Carregado antes de ui.js e script.js em todas as páginas.
+// Carregado antes de ui.js e dos outros scripts em todas as páginas.
 // =====================================================================
 
 // Caminho relativo: o front é servido pela própria API (wwwroot), então
@@ -8,18 +8,12 @@
 const API_URL = "/api";
 const SESSION_KEY = "resenhario_usuario";
 
-// Usuário logado (nome, e-mail e token JWT) guardado no localStorage.
+// Usuário logado (nome, e-mail e token JWT) guardado no localStorage. Sem token = ninguém logado.
 function usuarioAtual() {
     try {
-        const usuario = JSON.parse(localStorage.getItem(SESSION_KEY) || "null");
-        // Remove a sessão antiga, que guardava somente o ID e não possuía token assinado.
-        if (usuario && !usuario.token) {
-            localStorage.removeItem(SESSION_KEY);
-            return null;
-        }
-        return usuario;
+        const usuario = JSON.parse(localStorage.getItem(SESSION_KEY));
+        return usuario?.token ? usuario : null;
     } catch {
-        localStorage.removeItem(SESSION_KEY);
         return null;
     }
 }

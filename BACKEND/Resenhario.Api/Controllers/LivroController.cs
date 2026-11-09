@@ -30,34 +30,6 @@ public class LivroController : ControllerBase
         return livro is null ? NotFound() : Ok(livro);
     }
 
-    // GET /api/Livro/5/medias → médias da comunidade: nota da obra e fidelidade de cada adaptação.
-    [HttpGet("{id:int}/medias")]
-    public async Task<IActionResult> GetMedias(int id)
-    {
-        var livro = await _context.Livros.FindAsync(id);
-        if (livro is null) return NotFound();
-
-        var notasLivro = _context.Reviews.Where(r => r.IdLivro == id && r.NotaLivro != null);
-        var mediaNotaLivro = await notasLivro.AverageAsync(r => (double?)r.NotaLivro);
-        var totalResenhas = await notasLivro.CountAsync();
-
-        var adaptacoes = await (
-            from a in _context.Adaptacoes
-            join f in _context.Filmes on a.IdFilme equals f.IdFilme
-            where a.IdLivro == id
-            select new
-            {
-                a.IdAdaptacoes,
-                TituloFilme = f.Titulo,
-                f.PosterUrl,
-                MediaFidelidade = _context.Reviews.Where(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-                    .Select(r => (double?)r.NotaFidelidade).Average(),
-                TotalAvaliacoes = _context.Reviews.Count(r => r.IdAdaptacao == a.IdAdaptacoes && r.NotaFidelidade != null)
-            }).ToListAsync();
-
-        return Ok(new { livro.IdLivros, livro.Titulo, mediaNotaLivro, totalResenhas, adaptacoes });
-    }
-
     // POST /api/Livro → 201 Created (com o endereço do novo livro) ou 409 se já existir.
     // As Data Annotations do Model Livro já foram validadas antes de entrar aqui (400 se falharem).
     [Authorize]

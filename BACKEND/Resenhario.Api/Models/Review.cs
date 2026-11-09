@@ -21,6 +21,5 @@ public class Review
     public bool AssistiuFilme { get; set; }
     [Range(1, 5, ErrorMessage = "A fidelidade da adaptação deve estar entre 1 e 5 estrelas.")]
     public int? NotaFidelidade { get; set; }
-    public string? Voto { get; set; }
     public DateTime DataCriacao { get; set; }
 }

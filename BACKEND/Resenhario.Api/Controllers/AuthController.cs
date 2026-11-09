@@ -40,25 +40,16 @@ public class AuthController : ControllerBase
 
     // POST /api/Auth/cadastro → cria a conta e já devolve o token (201)
     [HttpPost("cadastro")]
-    public async Task<IActionResult> Cadastro([FromBody] CadastroRequest? dados)
+    // As Data Annotations do CadastroRequest já foram conferidas antes de entrar aqui (400 se falharem).
+    public async Task<IActionResult> Cadastro(CadastroRequest dados)
     {
-        if (dados is null || string.IsNullOrWhiteSpace(dados.Nome) ||
-            string.IsNullOrWhiteSpace(dados.Email) || string.IsNullOrWhiteSpace(dados.Senha))
-            return BadRequest("Informe nome, e-mail e senha.");
-
-        var nome = dados.Nome.Trim();
         var email = dados.Email.Trim().ToLowerInvariant();
-        if (nome.Length > 150 || email.Length > 150 || !email.Contains('@'))
-            return BadRequest("Informe um nome e um e-mail válidos.");
-        if (dados.Senha.Length < 8)
-            return BadRequest("A senha deve ter pelo menos 8 caracteres.");
-
         if (await _context.Usuarios.AnyAsync(u => u.Email.ToLower() == email))
             return Conflict("Já existe uma conta com esse e-mail.");
 
         var usuario = new Usuario
         {
-            Nome = nome,
+            Nome = dados.Nome.Trim(),
             Email = email,
             // BCrypt gera um hash com "sal" aleatório: a mesma senha vira hashes diferentes,
             // e não dá para voltar do hash para a senha. Só guardamos o hash.
@@ -75,11 +66,8 @@ public class AuthController : ControllerBase
     // POST /api/Auth/login → 200 com o token, ou 401 com mensagem genérica
     // (não dizemos se foi o e-mail ou a senha que errou, para não ajudar quem tenta adivinhar contas).
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest? dados)
+    public async Task<IActionResult> Login(LoginRequest dados)
     {
-        if (dados is null || string.IsNullOrWhiteSpace(dados.Email) || string.IsNullOrEmpty(dados.Senha))
-            return BadRequest("Informe e-mail e senha.");
-
         var email = dados.Email.Trim().ToLowerInvariant();
         var usuario = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
         if (usuario is null || string.IsNullOrWhiteSpace(usuario.SenhaHash))
@@ -97,9 +85,7 @@ public class AuthController : ControllerBase
     // Monta o token JWT: dados do usuário (claims) + validade de 8 horas, assinados com a Jwt:Key.
     private UsuarioResposta CriarResposta(Usuario usuario)
     {
-        var chave = _configuration["Jwt:Key"];
-        if (string.IsNullOrWhiteSpace(chave) || Encoding.UTF8.GetByteCount(chave) < 32)
-            throw new InvalidOperationException("Configure Jwt:Key com pelo menos 32 bytes por variável de ambiente antes de iniciar a API.");
+        var chave = _configuration["Jwt:Key"]!; // o Program.cs não deixa a API subir sem ela
 
         var issuer = _configuration["Jwt:Issuer"] ?? "Resenhario.Api";
         var audience = _configuration["Jwt:Audience"] ?? "Resenhario.Frontend";
