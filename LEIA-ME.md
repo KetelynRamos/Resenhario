@@ -12,16 +12,17 @@ Projeto da disciplina **Desenvolvimento de Software Visual**, Universidade Posit
 
 ## Como rodar no seu computador
 
-São 4 passos. Leva uns 10 minutos.
+**Antes de começar:** instale o [.NET 10 SDK](https://dotnet.microsoft.com/download) e o [MySQL Workbench](https://dev.mysql.com/downloads/workbench/). O banco de dados fica na nuvem (**Aiven**). Os dados de acesso (host, porta, usuário e senha) e as chaves das APIs são entregues pela equipe à parte: por segurança, eles não ficam no código.
 
-### 1. Instale os programas
+### 1. Rodar os scripts no MySQL (banco do Aiven)
 
-- **.NET 10 SDK:** https://dotnet.microsoft.com/download (no terminal, `dotnet --version` deve mostrar `10.x`).
-- **MySQL 8** com o **MySQL Workbench**: https://dev.mysql.com/downloads/
+No MySQL Workbench, crie uma conexão com os dados do Aiven:
 
-### 2. Crie o banco de dados
+- **Hostname** e **Port**: os do Aiven (a porta não é a 3306).
+- **Username**: `avnadmin` e, em **Store in Vault**, a senha.
+- Aba **SSL**: **Use SSL** = `Require`.
 
-No MySQL Workbench, conecte no seu MySQL local e rode, **nesta ordem**, os scripts da pasta `BANCO DE DADOS` (menu *File → Open SQL Script*, depois o raio ⚡ para executar):
+Conecte e rode, nesta ordem, os scripts da pasta `BANCO DE DADOS` (*File → Open SQL Script* e depois o raio ⚡):
 
 1. `01_criar_banco.sql`
 2. `05_atualizar_banco.sql`
@@ -29,24 +30,42 @@ No MySQL Workbench, conecte no seu MySQL local e rode, **nesta ordem**, os scrip
 4. `09_indices_unicos.sql`
 5. `10_perfil_meta_comunidade.sql`
 
-Eles criam o banco `resenhario_db` com todas as tabelas. Os outros scripts da pasta não são necessários.
+Eles garantem o banco `resenhario_db` com todas as tabelas. Não apagam nada: se o banco já existir, só conferem.
 
-### 3. Informe a senha do seu MySQL
+### 2. Abrir o terminal no backend
 
-Abra o arquivo `BACKEND/Resenhario.Api/appsettings.json` e troque `COLOQUE_SUA_SENHA` pela senha do usuário `root` do seu MySQL:
-
-```json
-"DefaultConnection": "server=localhost;port=3306;database=resenhario_db;user=root;password=COLOQUE_SUA_SENHA;"
-```
-
-Se o seu usuário não for `root` ou a porta não for `3306`, ajuste também esses valores.
-
-### 4. Rode o site
-
-No terminal (PowerShell, Prompt de Comando ou o terminal do VS Code), a partir da pasta do projeto:
+No terminal (PowerShell ou o terminal do VS Code), a partir da pasta do projeto:
 
 ```
 cd BACKEND/Resenhario.Api
+```
+
+Os próximos comandos são todos rodados nesta pasta.
+
+### 3. Conectar ao banco de dados
+
+Troque `HOST`, `PORTA` e `SENHA` pelos dados do Aiven:
+
+```
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "server=HOST;port=PORTA;database=resenhario_db;user=avnadmin;password=SENHA;SslMode=Required;"
+```
+
+O `user-secrets` guarda a conexão no seu computador, fora do código.
+
+### 4. Configurar as APIs
+
+Com o token do TMDB (filmes) e a chave do Google Books (livros):
+
+```
+dotnet user-secrets set "Tmdb:ReadAccessToken" "TOKEN_DO_TMDB"
+dotnet user-secrets set "GoogleBooks:ApiKey" "CHAVE_DO_GOOGLE"
+```
+
+Sem o token do TMDB, a pesquisa de filmes mostra um aviso e o resto do site funciona normalmente. A chave do Google é opcional: sem ela, a busca de livros funciona até o limite gratuito do Google.
+
+### 5. Rodar o site (http)
+
+```
 dotnet run --launch-profile http
 ```
 
@@ -54,7 +73,7 @@ Quando aparecer `Now listening on: http://localhost:5131`, abra no navegador:
 
 **http://localhost:5131**
 
-Na primeira vez, a própria API preenche o banco com os dados de demonstração: 20 livros, 21 filmes, 6 usuários, 32 resenhas, curtidas e comentários. Para parar o site, use `Ctrl + C` no terminal.
+Para parar o site, use `Ctrl + C` no terminal.
 
 ---
 
@@ -80,30 +99,16 @@ Também é possível criar uma conta nova em **Entrar → Criar conta**.
 | **Swagger** | http://localhost:5131/swagger: todas as rotas da API. Para as rotas com cadeado, faça login em `/api/Auth/login`, copie o `token` e cole em **Authorize**. |
 | **Saúde** | http://localhost:5131/api/saude: confere se a API e o banco estão conectados. |
 
-## Pesquisas nas APIs externas (opcional)
-
-As buscas usam a **Google Books API** (livros) e a **TMDB API** (filmes). As chaves ficam fora do código, por segurança.
-
-- **Livros:** a busca funciona sem chave.
-- **Filmes e "Procurar adaptações":** precisam do token do TMDB. Sem ele, o site mostra um aviso e todo o resto funciona normalmente com os dados já salvos.
-
-Se quiser testar as buscas de filmes, crie um token gratuito em themoviedb.org (*Configurações → API → API Read Access Token*) e rode, dentro de `BACKEND/Resenhario.Api`:
-
-```
-dotnet user-secrets set "Tmdb:ReadAccessToken" "SEU_TOKEN"
-```
-
-Com internet, a API tenta buscar sozinha as capas dos livros de demonstração no Google Books; os pôsteres dos filmes precisam do token do TMDB. Quando não há imagem (sem token, sem internet ou com o limite de buscas do Google atingido), o site mostra capas desenhadas por ele mesmo, e tudo continua funcionando.
-
 ## Se algo der errado
 
 | Sintoma | Solução |
 |---|---|
-| `dotnet` não é reconhecido, ou a versão não é 10 | Instale o .NET 10 SDK (passo 1) e abra um terminal novo. |
-| Erro na inicialização pedindo a `Jwt:Key` | Rode com `--launch-profile http`, exatamente como no passo 4. |
-| `/api/saude` mostra `"banco": "sem conexão"` | Confira a senha no `appsettings.json` (passo 3) e se o MySQL está ligado. O campo `motivo` mostra o erro. |
-| `Access denied for user 'root'@'localhost'` | A senha do passo 3 está errada. |
-| `Unknown database 'resenhario_db'` | Faltou rodar os scripts do passo 2. |
+| `dotnet` não é reconhecido, ou a versão não é 10 | Instale o .NET 10 SDK e abra um terminal novo. |
+| Erro na inicialização pedindo a `Jwt:Key` | Rode com `--launch-profile http`, exatamente como no passo 5. |
+| `/api/saude` mostra `"banco": "sem conexão"` | Confira host, porta e senha do passo 3 (com `SslMode=Required`) e se o serviço do Aiven está **Running**. O campo `motivo` mostra o erro. |
+| `Access denied for user 'avnadmin'` | A senha do passo 3 está errada. Rode o comando de novo com a senha certa. |
+| `Unknown database 'resenhario_db'` | Faltou rodar os scripts do passo 1. |
+| A busca de filmes diz que o TMDB não está configurado | Falta o token do passo 4. |
 | A porta 5131 já está em uso | Feche outro terminal que esteja rodando o projeto e tente de novo. |
 
 ## Organização do projeto
