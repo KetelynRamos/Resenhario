@@ -28,13 +28,26 @@ function iniciarPaginaFilmes() {
             area.replaceChildren(...filmes.map(f => criarCardObra({
                 titulo: f.titulo, imagem: f.posterUrl, tipo: "Filme",
                 subtitulo: [f.anoLancamento, f.diretor].filter(Boolean).join(" · "),
-                acoes: [{ texto: "Adicionar ao catálogo", acao: botao => salvarFilme(f, botao, catalogo) }]
+                // O TMDB diz quem escreveu a obra original: se houver, o filme veio de um livro.
+                detalhe: f.autoresOriginais.length ? `Baseado na obra de ${f.autoresOriginais.join(", ")}` : "",
+                acoes: [{ texto: "Adicionar ao catálogo", acao: botao => salvarFilme(f, botao, catalogo) },
+                    ...(f.autoresOriginais.length ? [acaoEncontrarLivro(f)] : [])]
             })));
         } catch (err) {
             msg.textContent = "";
             mostrarEstadoVazio(area, { erro: true, titulo: "A busca deu uma pausa", texto: "Não conseguimos procurar filmes agora. Tenta de novo em instantes; os filmes que já estão aqui continuam logo abaixo." });
         }
     });
+}
+
+// Do filme ao livro: se o livro já está vinculado, abre a página da adaptação;
+// senão, abre Livros já pesquisando o título do filme e o autor da obra original.
+function acaoEncontrarLivro(filme) {
+    if (filme.idAdaptacao)
+        return { texto: "Ver o livro", secundario: true, acao: () => location.href = `/paginas/adaptacao.html?id=${filme.idAdaptacao}` };
+    // "Forrest Gump: O Contador de Histórias" → pesquisa "Forrest Gump Winston Groom".
+    const termo = `${filme.titulo.split(":")[0]} ${filme.autoresOriginais[0]}`;
+    return { texto: "Encontrar o livro", secundario: true, acao: () => location.href = `/paginas/livros.html?q=${encodeURIComponent(termo)}` };
 }
 
 async function salvarFilme(filme, botao, catalogo) {

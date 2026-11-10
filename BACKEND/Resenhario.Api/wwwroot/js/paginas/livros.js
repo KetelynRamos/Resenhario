@@ -52,4 +52,12 @@ async function salvarLivro(livro, botao, catalogo) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", iniciarPaginaLivros);
+// Veio de Filmes ("Encontrar o livro"): já preenche a pesquisa e procura.
+function pesquisarLivroDaUrl() {
+    const termo = new URLSearchParams(location.search).get("q");
+    if (!termo) return;
+    document.getElementById("termo-livro").value = termo;
+    document.getElementById("form-busca-livros").requestSubmit();
+}
+
+document.addEventListener("DOMContentLoaded", () => { iniciarPaginaLivros(); pesquisarLivroDaUrl(); });
