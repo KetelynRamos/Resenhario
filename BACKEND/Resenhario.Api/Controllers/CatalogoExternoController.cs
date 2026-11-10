@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Resenhario.Api.Data;
+using Resenhario.Api.Models;
 using Resenhario.Api.Models.Externos;
 using Resenhario.Api.Services;
 
@@ -31,6 +32,10 @@ public class CatalogoExternoController : ControllerBase
 
     public record LivroExterno(string Id, string Titulo, string Autor, string? Sinopse, string? Isbn, string? CapaUrl, string? AnoPublicacao);
     public record FilmeExterno(string TmdbId, string Titulo, string? Diretor, int? AnoLancamento, string? PosterUrl);
+    // Resultado da pesquisa de filmes: além do pôster e do diretor, diz se o filme veio de um livro
+    // (AutoresOriginais) e, se ele já está vinculado a um livro aqui, qual é a adaptação (IdAdaptacao).
+    public record FilmePesquisado(string TmdbId, string Titulo, string? Diretor, int? AnoLancamento, string? PosterUrl,
+        List<string> AutoresOriginais, int? IdAdaptacao);
     public record AdaptacaoSugerida(string TmdbId, string Titulo, string? Diretor, int? AnoLancamento, string? PosterUrl,
         List<string> AutoresOriginais, int? IdFilme, bool JaVinculado);
 
@@ -80,7 +85,7 @@ public class CatalogoExternoController : ControllerBase
             info.Description, isbn, capa, info.PublishedDate);
     }
 
-    // GET /api/Filme/buscar?q=duna → busca no TMDB (pôster e diretor)
+    // GET /api/Filme/buscar?q=duna → busca no TMDB (pôster, diretor e se o filme veio de um livro)
     [HttpGet("api/Filme/buscar")]
     public async Task<IActionResult> BuscarFilmes(string? q)
     {
@@ -93,8 +98,16 @@ public class CatalogoExternoController : ControllerBase
             var achados = await PesquisarNoTmdbAsync(q.Trim());
             if (achados is null) return TmdbRespondeuComErro();
 
-            // "with" cria uma cópia do record trocando só o campo Diretor.
-            return Ok(achados.Select(a => a.Filme with { Diretor = ConferenciaAdaptacao.Diretor(a.Creditos) }).ToList());
+            var catalogo = await _context.Filmes.ToListAsync();
+            var adaptacoes = await _context.Adaptacoes.ToListAsync();
+            return Ok(achados.Select(a =>
+            {
+                // Se o filme já tem um livro vinculado aqui, o card leva direto à página da adaptação.
+                var noCatalogo = AcharNoCatalogo(catalogo, a.Filme);
+                var adaptacao = noCatalogo is null ? null : adaptacoes.FirstOrDefault(x => x.IdFilme == noCatalogo.IdFilme);
+                return new FilmePesquisado(a.Filme.TmdbId, a.Filme.Titulo, ConferenciaAdaptacao.Diretor(a.Creditos),
+                    a.Filme.AnoLancamento, a.Filme.PosterUrl, ConferenciaAdaptacao.AutoresOriginais(a.Creditos), adaptacao?.IdAdaptacoes);
+            }).ToList());
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or TaskCanceledException)
         {
@@ -128,10 +141,7 @@ public class CatalogoExternoController : ControllerBase
                 var autores = ConferenciaAdaptacao.AutoresOriginais(creditos);
                 if (!ConferenciaAdaptacao.AutorConfere(livro.Autor, autores)) continue; // não veio deste livro
 
-                // Já está no catálogo? Pelo código do TMDB ou, se foi salvo sem ele, pelo título e ano.
-                var noCatalogo = catalogo.FirstOrDefault(f => f.TmdbId == filme.TmdbId)
-                    ?? catalogo.FirstOrDefault(f => f.TmdbId == null && f.AnoLancamento == filme.AnoLancamento &&
-                        f.Titulo.StartsWith(filme.Titulo, StringComparison.OrdinalIgnoreCase));
+                var noCatalogo = AcharNoCatalogo(catalogo, filme);
                 sugestoes.Add(new AdaptacaoSugerida(filme.TmdbId, filme.Titulo, ConferenciaAdaptacao.Diretor(creditos),
                     filme.AnoLancamento, filme.PosterUrl, autores, noCatalogo?.IdFilme,
                     noCatalogo is not null && vinculados.Contains(noCatalogo.IdFilme)));
@@ -143,6 +153,12 @@ public class CatalogoExternoController : ControllerBase
             return ErroNaApiExterna("TMDB", ex);
         }
     }
+
+    // O filme do TMDB já está no nosso catálogo? Pelo código do TMDB ou, se foi salvo sem ele, pelo título e ano.
+    private static Filme? AcharNoCatalogo(List<Filme> catalogo, FilmeExterno filme) =>
+        catalogo.FirstOrDefault(f => f.TmdbId == filme.TmdbId)
+        ?? catalogo.FirstOrDefault(f => f.TmdbId == null && f.AnoLancamento == filme.AnoLancamento &&
+            f.Titulo.StartsWith(filme.Titulo, StringComparison.OrdinalIgnoreCase));
 
     // Um filme achado na pesquisa do TMDB + os créditos dele (diretor e autores da obra original).
     private record FilmeEncontrado(FilmeExterno Filme, TmdbCreditos? Creditos);
